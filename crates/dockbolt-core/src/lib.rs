@@ -1,5 +1,7 @@
 pub mod client;
 pub mod containers;
+pub mod images;
+pub mod volumes;
 pub mod engine;
 pub mod error;
 pub mod types;
@@ -172,5 +174,49 @@ mod container_tests {
     fn force_only_when_running() {
         assert!(force_for_container_delete(true));
         assert!(!force_for_container_delete(false));
+    }
+}
+
+#[cfg(test)]
+mod image_volume_tests {
+    use crate::images::sort_images;
+    use crate::volumes::sort_volumes;
+    use crate::{ImageRow, VolumeRow};
+
+    #[test]
+    fn images_sort_by_first_tag() {
+        let mut rows = vec![
+            ImageRow {
+                id: "b".into(),
+                tags: vec!["zeta".into()],
+                size_bytes: 1,
+                created_unix: 0,
+            },
+            ImageRow {
+                id: "a".into(),
+                tags: vec![],
+                size_bytes: 1,
+                created_unix: 0,
+            },
+        ];
+        sort_images(&mut rows);
+        assert_eq!(rows[0].id, "a");
+        assert_eq!(rows[1].id, "b");
+    }
+
+    #[test]
+    fn volumes_sort_by_name() {
+        let mut rows = vec![
+            VolumeRow {
+                name: "b".into(),
+                driver: "local".into(),
+            },
+            VolumeRow {
+                name: "a".into(),
+                driver: "local".into(),
+            },
+        ];
+        sort_volumes(&mut rows);
+        assert_eq!(rows[0].name, "a");
     }
 }
