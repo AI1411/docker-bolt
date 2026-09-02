@@ -11,6 +11,17 @@ function imageLabel(row: ImageRow): string {
   return row.tags[0] || shortId(row.id);
 }
 
+function TrashIcon() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 16 16" aria-hidden="true">
+      <path
+        fill="currentColor"
+        d="M6 2h4l.4 1H14v1H2V3h3.6L6 2zm1 4v6H6V6h1zm2 0v6H8V6h1zm2 0v6h-1V6h1zM3.5 5H13l-.7 9.1A1 1 0 0 1 11.3 15H4.7a1 1 0 0 1-1-.9L3.5 5z"
+      />
+    </svg>
+  );
+}
+
 type Dialog =
   | { kind: "delete"; title: string; body: string; id: string }
   | { kind: "error"; body: string };
@@ -30,6 +41,16 @@ export function Images() {
   const [dialog, setDialog] = useState<Dialog | null>(null);
   const [busy, setBusy] = useState(false);
   const items = useMemo(() => buildImageTableItems(rows), [rows]);
+
+  function askDelete(row: ImageRow) {
+    if (busy) return;
+    setDialog({
+      kind: "delete",
+      title: "Delete image",
+      body: `Delete ${imageLabel(row)}?`,
+      id: row.id,
+    });
+  }
 
   async function confirmDelete(id: string) {
     setBusy(true);
@@ -74,6 +95,7 @@ export function Images() {
             <span className="cell">ID</span>
             <span className="cell">Size</span>
             <span className="cell">Created</span>
+            <span className="cell" />
           </div>
         }
         rowRenderer={(index) => {
@@ -101,6 +123,23 @@ export function Images() {
               <span className="cell mono">{shortId(row.id)}</span>
               <span className="cell">{fmtBytes(row.size_bytes)}</span>
               <span className="cell">{fmtTime(row.created_unix)}</span>
+              <span className="cell actions">
+                {!row.in_use ? (
+                  <button
+                    type="button"
+                    className="icon-btn"
+                    title="Delete"
+                    aria-label={`Delete ${imageLabel(row)}`}
+                    disabled={!connected || busy}
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      askDelete(row);
+                    }}
+                  >
+                    <TrashIcon />
+                  </button>
+                ) : null}
+              </span>
             </div>
           );
         }}
@@ -118,13 +157,8 @@ export function Images() {
           type="button"
           disabled={!connected || !selected || busy}
           onClick={() => {
-            if (!selected || busy) return;
-            setDialog({
-              kind: "delete",
-              title: "Delete image",
-              body: `Delete ${imageLabel(selected)}?`,
-              id: selected.id,
-            });
+            if (!selected) return;
+            askDelete(selected);
           }}
         >
           Delete
