@@ -1,0 +1,19 @@
+version: "3"
+
+tasks:
+  default:
+    task: start
+
+  install:
+    desc: Install npm dependencies
+    cmds:
+      - npm install
+    status:
+      - test -d node_modules
+
+  start:
+    desc: Start DockBolt in development (Tauri + Vite)
+    deps: [install]
+    aliases: [dev, run]
+    cmds:
+      - npm run tauri -- dev
