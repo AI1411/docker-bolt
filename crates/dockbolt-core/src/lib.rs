@@ -4,6 +4,7 @@ pub mod images;
 pub mod volumes;
 pub mod engine;
 pub mod error;
+pub mod logs;
 pub mod types;
 
 pub use client::DockerPort;
@@ -218,5 +219,79 @@ mod image_volume_tests {
         ];
         sort_volumes(&mut rows);
         assert_eq!(rows[0].name, "a");
+    }
+}
+
+#[cfg(test)]
+mod log_unit_tests {
+    use std::time::Duration;
+    use crate::logs::{
+        parse_docker_log_text, push_ring, should_flush, BatchQueue, LogSeq, LOG_BATCH_LINES,
+        LOG_RING_MAX,
+    };
+    use crate::LogStream;
+
+    #[test]
+    fn splits_rfc3339_prefix() {
+        let (ts, raw) = parse_docker_log_text("2024-01-02T03:04:05.000000000Z hello");
+        assert!(ts.is_some());
+        assert_eq!(raw, "hello");
+    }
+
+    #[test]
+    fn unparsed_keeps_whole_line() {
+        let (ts, raw) = parse_docker_log_text("not a timestamp");
+        assert_eq!(ts, None);
+        assert_eq!(raw, "not a timestamp");
+    }
+
+    #[test]
+    fn flush_on_count_or_time() {
+        assert!(should_flush(LOG_BATCH_LINES, Duration::from_millis(0)));
+        assert!(should_flush(1, Duration::from_millis(16)));
+        assert!(!should_flush(1, Duration::from_millis(15)));
+    }
+
+    #[test]
+    fn seq_increments() {
+        let mut seq = LogSeq::default();
+        let a = seq.next_line(LogStream::Stdout, None, "a".into());
+        let b = seq.next_line(LogStream::Stderr, None, "b".into());
+        assert_eq!(a.seq, 1);
+        assert_eq!(b.seq, 2);
+        assert_eq!(b.stream, LogStream::Stderr);
+    }
+
+    #[test]
+    fn ring_drops_oldest() {
+        let mut lines = Vec::new();
+        let mut seq = LogSeq::default();
+        let extra = 10;
+        let incoming: Vec<_> = (0..(LOG_RING_MAX + extra))
+            .map(|_| seq.next_line(LogStream::Stdout, None, "x".into()))
+            .collect();
+        push_ring(&mut lines, incoming);
+        assert_eq!(lines.len(), LOG_RING_MAX);
+        assert_eq!(lines[0].seq, extra as u64 + 1);
+    }
+
+    #[test]
+    fn batch_queue_omits_oldest_when_full() {
+        let mut q = BatchQueue::new(2);
+        assert_eq!(q.push_batch(vec![]), 0);
+        let mut seq = LogSeq::default();
+        let batch1: Vec<_> = (0..3)
+            .map(|_| seq.next_line(LogStream::Stdout, None, "1".into()))
+            .collect();
+        let batch2: Vec<_> = (0..1)
+            .map(|_| seq.next_line(LogStream::Stdout, None, "2".into()))
+            .collect();
+        let batch3: Vec<_> = (0..1)
+            .map(|_| seq.next_line(LogStream::Stdout, None, "3".into()))
+            .collect();
+        q.push_batch(batch1);
+        q.push_batch(batch2);
+        let omitted = q.push_batch(batch3);
+        assert_eq!(omitted, 3);
     }
 }
