@@ -30,7 +30,10 @@ export default function App() {
       });
       const unlistenInvalidate = await listenInvalidate((resource) => {
         if (useConnection.getState().view.status !== "connected") return;
-        if (resource === "containers") void useContainers.getState().reload();
+        if (resource === "containers") {
+          void useContainers.getState().reload();
+          void useImages.getState().reload();
+        }
         if (resource === "images") void useImages.getState().reload();
         if (resource === "volumes") void useVolumes.getState().reload();
       });

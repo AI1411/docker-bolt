@@ -1,7 +1,8 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { ConfirmDialog } from "../components/ConfirmDialog";
 import { VirtualTable } from "../components/VirtualTable";
 import { fmtBytes, fmtTime, shortId } from "../lib/format";
+import { buildImageTableItems } from "../lib/imageGroups";
 import { api, ipcErrorCode, ipcErrorMessage, type ImageRow } from "../lib/tauri";
 import { useConnection } from "../stores/connection";
 import { useImages } from "../stores/images";
@@ -28,6 +29,7 @@ export function Images() {
   const connected = view.status === "connected";
   const [dialog, setDialog] = useState<Dialog | null>(null);
   const [busy, setBusy] = useState(false);
+  const items = useMemo(() => buildImageTableItems(rows), [rows]);
 
   async function confirmDelete(id: string) {
     setBusy(true);
@@ -64,7 +66,7 @@ export function Images() {
     }
     return (
       <VirtualTable
-        count={rows.length}
+        count={items.length}
         rowHeight={32}
         header={
           <div className="row head" data-cols="images">
@@ -75,7 +77,17 @@ export function Images() {
           </div>
         }
         rowRenderer={(index) => {
-          const row = rows[index];
+          const item = items[index];
+          if (item.kind === "section") {
+            return (
+              <div className="row section" data-cols="images">
+                <span className="cell">
+                  {item.title} ({item.count})
+                </span>
+              </div>
+            );
+          }
+          const row = item.row;
           const tags = row.tags.length > 0 ? row.tags.join(", ") : "<none>";
           return (
             <div

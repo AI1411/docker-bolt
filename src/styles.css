@@ -212,6 +212,21 @@ button.danger:not(:disabled):hover {
   background: var(--bg-selected);
 }
 
+.row.section {
+  color: var(--fg-muted);
+  font-weight: 600;
+  background: #161616;
+  cursor: default;
+}
+
+.row.section:hover {
+  background: #161616;
+}
+
+.row.section .cell {
+  grid-column: 1 / -1;
+}
+
 .row[data-cols="containers"] {
   grid-template-columns: minmax(90px, 1.4fr) minmax(90px, 1.4fr) 88px 108px 132px;
 }

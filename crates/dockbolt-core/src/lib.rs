@@ -148,6 +148,7 @@ mod container_tests {
             id: format!("id-{name}"),
             name: name.into(),
             image: "img".into(),
+            image_id: String::new(),
             state: if running { "running" } else { "exited" }.into(),
             running,
             created_unix: 0,
@@ -194,12 +195,14 @@ mod image_volume_tests {
                 tags: vec!["zeta".into()],
                 size_bytes: 1,
                 created_unix: 0,
+                in_use: false,
             },
             ImageRow {
                 id: "a".into(),
                 tags: vec![],
                 size_bytes: 1,
                 created_unix: 0,
+                in_use: false,
             },
         ];
         sort_images(&mut rows);

@@ -23,6 +23,8 @@ pub struct ContainerRow {
     pub id: String,
     pub name: String,
     pub image: String,
+    #[serde(default)]
+    pub image_id: String,
     pub state: String,
     pub running: bool,
     pub created_unix: i64,
@@ -34,6 +36,8 @@ pub struct ImageRow {
     pub tags: Vec<String>,
     pub size_bytes: u64,
     pub created_unix: i64,
+    #[serde(default)]
+    pub in_use: bool,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]

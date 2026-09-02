@@ -10,7 +10,7 @@ use dockbolt_core::engine::{candidate_from_probe, engine_specs, select_engine_id
 use dockbolt_core::events::{
     classify_events_poll, EventsSubscribe, InvalidateDebouncer, INVALIDATE_DEBOUNCE_MS,
 };
-use dockbolt_core::images::sort_images;
+use dockbolt_core::images::{classify_images, sort_images};
 use dockbolt_core::logs::{
     should_flush, BatchQueue, LogSeq, LOG_BATCH_WINDOW, LOG_CHANNEL_CAPACITY,
 };
@@ -513,7 +513,9 @@ async fn list_containers_inner(state: &AppState) -> Result<Vec<ContainerRow>, Ip
 
 async fn list_images_inner(state: &AppState) -> Result<Vec<ImageRow>, IpcError> {
     let docker = docker_from_state(state).await?;
+    let containers = docker.list_containers().await?;
     let mut rows = docker.list_images().await?;
+    classify_images(&mut rows, &containers);
     sort_images(&mut rows);
     Ok(rows)
 }

@@ -5,6 +5,7 @@ export type ContainerRow = {
   id: string;
   name: string;
   image: string;
+  image_id?: string;
   state: string;
   running: boolean;
   created_unix: number;
@@ -14,6 +15,7 @@ export type ImageRow = {
   tags: string[];
   size_bytes: number;
   created_unix: number;
+  in_use: boolean;
 };
 export type VolumeRow = { name: string; driver: string };
 export type EngineCandidate = {

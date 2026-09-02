@@ -108,6 +108,7 @@ impl DockerPort for BollardDocker {
                 ContainerRow {
                     name: normalize_container_name(&names, &id),
                     image: c.image.unwrap_or_default(),
+                    image_id: c.image_id.unwrap_or_default(),
                     running: state.eq_ignore_ascii_case("running"),
                     state,
                     created_unix: c.created.unwrap_or(0),
@@ -146,6 +147,7 @@ impl DockerPort for BollardDocker {
                 tags: img.repo_tags,
                 size_bytes: img.size as u64,
                 created_unix: img.created,
+                in_use: false,
             })
             .collect())
     }
