@@ -44,3 +44,53 @@ impl DockboltError {
         }
     }
 }
+
+pub fn map_status_and_message(status: Option<u16>, message: &str) -> DockboltError {
+    let lower = message.to_lowercase();
+    if lower.contains("permission denied") || lower.contains("eacces") {
+        return DockboltError::PermissionDenied;
+    }
+    match status {
+        Some(404) => DockboltError::NotFound(message.to_string()),
+        Some(409)
+            if lower.contains("in use")
+                || lower.contains("being used")
+                || lower.contains("conflict") =>
+        {
+            DockboltError::InUse {
+                summary: message.to_string(),
+            }
+        }
+        Some(409) => DockboltError::Conflict(message.to_string()),
+        _ => DockboltError::EngineUnreachable(message.to_string()),
+    }
+}
+
+#[cfg(test)]
+mod map_status_tests {
+    use super::*;
+
+    #[test]
+    fn maps_permission() {
+        assert_eq!(
+            map_status_and_message(None, "permission denied").code(),
+            "permission_denied"
+        );
+    }
+
+    #[test]
+    fn maps_in_use() {
+        assert_eq!(
+            map_status_and_message(Some(409), "volume is in use").code(),
+            "in_use"
+        );
+    }
+
+    #[test]
+    fn maps_404() {
+        assert_eq!(
+            map_status_and_message(Some(404), "no such container").code(),
+            "not_found"
+        );
+    }
+}

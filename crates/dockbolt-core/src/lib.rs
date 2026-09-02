@@ -1,3 +1,4 @@
+pub mod bollard_client;
 pub mod client;
 pub mod containers;
 pub mod events;

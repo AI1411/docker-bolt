@@ -88,6 +88,7 @@ pub enum ConnectionView {
 pub struct RawLogChunk {
     pub stream: LogStream,
     pub text: String,
+    pub timestamp_unix_ms: Option<i64>,
 }
 
 #[derive(Debug, Clone)]
