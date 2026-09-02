@@ -82,6 +82,7 @@ export function Logs() {
         </button>
       </div>
       <VirtualTable
+        follow
         count={filtered.length}
         rowHeight={22}
         rowRenderer={(index) => {
