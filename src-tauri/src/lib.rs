@@ -409,7 +409,7 @@ async fn list_engines() -> Result<Vec<EngineCandidate>, IpcError> {
     Ok(probe_engines().await)
 }
 
-#[tauri::command]
+#[tauri::command(rename_all = "snake_case")]
 async fn connect_engine(
     app: AppHandle,
     engine_id: String,
@@ -438,7 +438,7 @@ async fn list_volumes(state: State<'_, AppState>) -> Result<Vec<VolumeRow>, IpcE
     list_volumes_inner(&state).await
 }
 
-#[tauri::command]
+#[tauri::command(rename_all = "snake_case")]
 async fn delete_container(
     state: State<'_, AppState>,
     id: String,
@@ -457,7 +457,7 @@ async fn delete_container(
     Ok(OkReply { ok: true })
 }
 
-#[tauri::command]
+#[tauri::command(rename_all = "snake_case")]
 async fn delete_image(state: State<'_, AppState>, id: String) -> Result<OkReply, IpcError> {
     let IdArg { id } = IdArg { id };
     let docker = docker_from_state(&state).await?;
@@ -465,7 +465,7 @@ async fn delete_image(state: State<'_, AppState>, id: String) -> Result<OkReply,
     Ok(OkReply { ok: true })
 }
 
-#[tauri::command]
+#[tauri::command(rename_all = "snake_case")]
 async fn delete_volume(state: State<'_, AppState>, name: String) -> Result<OkReply, IpcError> {
     let NameArg { name } = NameArg { name };
     let docker = docker_from_state(&state).await?;
@@ -473,7 +473,7 @@ async fn delete_volume(state: State<'_, AppState>, name: String) -> Result<OkRep
     Ok(OkReply { ok: true })
 }
 
-#[tauri::command]
+#[tauri::command(rename_all = "snake_case")]
 async fn refresh(
     state: State<'_, AppState>,
     resource: String,
@@ -501,7 +501,7 @@ async fn refresh(
     }
 }
 
-#[tauri::command]
+#[tauri::command(rename_all = "snake_case")]
 async fn start_logs(
     app: AppHandle,
     state: State<'_, AppState>,
@@ -527,7 +527,7 @@ async fn start_logs(
     Ok(SessionReply { session_id })
 }
 
-#[tauri::command]
+#[tauri::command(rename_all = "snake_case")]
 async fn stop_logs(
     state: State<'_, AppState>,
     session_id: String,
