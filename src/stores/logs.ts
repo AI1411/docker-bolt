@@ -37,6 +37,7 @@ type LogsState = {
   pushBatch: (lines: LogLine[], omitted: number) => void;
   start: (containerId: string) => Promise<void>;
   stop: () => Promise<void>;
+  reset: () => void;
 };
 
 let unlistenBatch: UnlistenFn | undefined;
@@ -173,5 +174,28 @@ export const useLogs = create<LogsState>((set, get) => ({
       await stopSession(id);
     }
     set({ sessionId: null });
+  },
+  reset: () => {
+    startGeneration += 1;
+    const sessionId = get().sessionId;
+    const pending = pendingStartLogs;
+    pendingStartLogs = null;
+    void dropListeners();
+    if (sessionId) void stopSession(sessionId);
+    if (pending) {
+      void pending.then((pendingId) => {
+        if (pendingId) void stopSession(pendingId);
+      });
+    }
+    set({
+      sessionId: null,
+      containerId: null,
+      lines: [],
+      query: "",
+      streamFilter: "all",
+      omitted: 0,
+      endedReason: null,
+      error: null,
+    });
   },
 }));

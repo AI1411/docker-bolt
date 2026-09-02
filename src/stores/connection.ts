@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import { nextEngineId } from "../lib/engineSelect";
 import {
   api,
   ipcErrorCode,
@@ -9,6 +10,7 @@ import {
 } from "../lib/tauri";
 import { useContainers } from "./containers";
 import { useImages } from "./images";
+import { useLogs } from "./logs";
 import { useVolumes } from "./volumes";
 
 type ConnectionState = {
@@ -25,6 +27,7 @@ function clearLists() {
   useContainers.getState().clear();
   useImages.getState().clear();
   useVolumes.getState().clear();
+  useLogs.getState().reset();
 }
 
 function applyRefreshAll(data: RefreshAll) {
@@ -75,9 +78,9 @@ export const useConnection = create<ConnectionState>((set, get) => ({
   },
   retry: async () => {
     const engines = await get().loadEngines();
-    const first = engines.find((engine) => engine.available);
-    if (first) {
-      await get().connect(first.engine_id);
+    const engine_id = nextEngineId(undefined, engines);
+    if (engine_id) {
+      await get().connect(engine_id);
     }
   },
   bootstrap: async () => {

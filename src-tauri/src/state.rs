@@ -73,7 +73,7 @@ pub fn save_engine_file(path: &Path, engine_id: &str) -> std::io::Result<()> {
 
 #[cfg(test)]
 mod tests {
-    use super::EngineFile;
+    use super::{load_engine_file, save_engine_file, EngineFile};
 
     #[test]
     fn engine_file_roundtrip() {
@@ -83,5 +83,23 @@ mod tests {
         .unwrap();
         let parsed: EngineFile = serde_json::from_str(&raw).unwrap();
         assert_eq!(parsed.selected_engine_id, "orbstack");
+    }
+
+    #[test]
+    fn invalid_engine_json_treated_as_missing() {
+        let dir = std::env::temp_dir().join(format!(
+            "dockbolt-engine-json-{}",
+            std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .unwrap()
+                .as_nanos()
+        ));
+        std::fs::create_dir_all(&dir).unwrap();
+        let path = dir.join("engine.json");
+        std::fs::write(&path, "{not json").unwrap();
+        assert_eq!(load_engine_file(&path), None);
+        save_engine_file(&path, "orbstack").unwrap();
+        assert_eq!(load_engine_file(&path).as_deref(), Some("orbstack"));
+        let _ = std::fs::remove_dir_all(&dir);
     }
 }

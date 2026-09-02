@@ -10,12 +10,19 @@ import { Volumes } from "./screens/Volumes";
 import { useConnection } from "./stores/connection";
 import { useContainers } from "./stores/containers";
 import { useImages } from "./stores/images";
+import { useLogs } from "./stores/logs";
 import { useVolumes } from "./stores/volumes";
 
 export default function App() {
   useEffect(() => {
     const pending = [
       listenConnection((view) => {
+        if (view.status === "disconnected") {
+          useContainers.getState().clear();
+          useImages.getState().clear();
+          useVolumes.getState().clear();
+          useLogs.getState().reset();
+        }
         useConnection.getState().setView(view);
       }),
       listenInvalidate((resource) => {

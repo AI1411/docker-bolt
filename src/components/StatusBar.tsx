@@ -1,3 +1,4 @@
+import { nextEngineId } from "../lib/engineSelect";
 import { useConnection } from "../stores/connection";
 
 export function StatusBar() {
@@ -9,7 +10,7 @@ export function StatusBar() {
   const selected =
     view.status === "connected"
       ? view.engine_id
-      : engines.find((engine) => engine.available)?.engine_id ?? "";
+      : nextEngineId(undefined, engines) ?? "";
 
   let statusText = "Connecting";
   if (view.status === "connected") {
