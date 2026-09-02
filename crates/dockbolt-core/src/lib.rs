@@ -1,5 +1,6 @@
 pub mod client;
 pub mod containers;
+pub mod events;
 pub mod images;
 pub mod volumes;
 pub mod engine;
@@ -293,5 +294,46 @@ mod log_unit_tests {
         q.push_batch(batch2);
         let omitted = q.push_batch(batch3);
         assert_eq!(omitted, 3);
+    }
+}
+
+#[cfg(test)]
+mod event_tests {
+    use crate::events::{resource_from_docker_type, InvalidateDebouncer};
+    use crate::ResourceKind;
+
+    #[test]
+    fn maps_docker_types() {
+        assert_eq!(
+            resource_from_docker_type("container"),
+            Some(ResourceKind::Containers)
+        );
+        assert_eq!(resource_from_docker_type("image"), Some(ResourceKind::Images));
+        assert_eq!(resource_from_docker_type("volume"), Some(ResourceKind::Volumes));
+        assert_eq!(resource_from_docker_type("network"), None);
+    }
+
+    #[test]
+    fn debounce_coalesces_same_kind() {
+        let mut d = InvalidateDebouncer::new();
+        d.note(ResourceKind::Containers, 0);
+        d.note(ResourceKind::Containers, 50);
+        assert!(d.take_ready(50).is_empty());
+        let ready = d.take_ready(100);
+        assert_eq!(ready, vec![ResourceKind::Containers]);
+        assert!(d.take_ready(100).is_empty());
+    }
+
+    #[test]
+    fn debounce_separates_kinds() {
+        let mut d = InvalidateDebouncer::new();
+        d.note(ResourceKind::Containers, 0);
+        d.note(ResourceKind::Images, 0);
+        let mut ready = d.take_ready(100);
+        ready.sort_by_key(|k| k.as_str());
+        assert_eq!(
+            ready,
+            vec![ResourceKind::Containers, ResourceKind::Images]
+        );
     }
 }
