@@ -269,3 +269,58 @@ button.danger:not(:disabled):hover {
   justify-content: flex-end;
   gap: 8px;
 }
+
+.logs-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg-toolbar);
+  min-height: 28px;
+}
+
+.logs-name {
+  font-weight: 600;
+}
+
+.run-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #555;
+  flex-shrink: 0;
+}
+
+.run-dot.running {
+  background: #22c55e;
+}
+
+.logs-ended {
+  color: #f0c14b;
+}
+
+.logs-skipped {
+  margin-left: auto;
+  color: var(--fg-muted);
+}
+
+.toolbar .log-search {
+  flex: 1;
+  min-width: 120px;
+  height: 22px;
+  font: inherit;
+  color: var(--fg);
+  background: #2b2b2b;
+  border: 1px solid var(--border);
+  padding: 0 8px;
+}
+
+.row[data-cols="logs"] {
+  grid-template-columns: 72px 1fr;
+  height: 22px;
+}
+
+.log-row.stderr {
+  color: #f87171;
+}

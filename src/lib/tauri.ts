@@ -36,6 +36,26 @@ export type ConnectionView =
 
 export type ResourceName = "containers" | "images" | "volumes";
 
+export type LogLine = {
+  seq: number;
+  stream: "stdout" | "stderr";
+  timestamp_unix_ms?: number;
+  raw: string;
+};
+
+export type LogsBatch = {
+  session_id: string;
+  lines: LogLine[];
+  omitted: number;
+};
+
+export type LogEndedReason = "stopped" | "container_gone" | "disconnected" | "error";
+
+export type LogsEnded = {
+  session_id: string;
+  reason: LogEndedReason;
+};
+
 export type RefreshAll = {
   containers: ContainerRow[];
   images: ImageRow[];
@@ -72,6 +92,14 @@ export function listenInvalidate(
   return listen<{ resource: ResourceName }>("resources://invalidate", (e) =>
     cb(e.payload.resource),
   );
+}
+
+export function listenLogsBatch(cb: (batch: LogsBatch) => void): Promise<UnlistenFn> {
+  return listen<LogsBatch>("logs://batch", (e) => cb(e.payload));
+}
+
+export function listenLogsEnded(cb: (ended: LogsEnded) => void): Promise<UnlistenFn> {
+  return listen<LogsEnded>("logs://ended", (e) => cb(e.payload));
 }
 
 export function ipcErrorMessage(err: unknown): string {

@@ -5,19 +5,12 @@ import { StatusBar } from "./components/StatusBar";
 import { listenConnection, listenInvalidate } from "./lib/tauri";
 import { Containers } from "./screens/Containers";
 import { Images } from "./screens/Images";
+import { Logs } from "./screens/Logs";
 import { Volumes } from "./screens/Volumes";
 import { useConnection } from "./stores/connection";
 import { useContainers } from "./stores/containers";
 import { useImages } from "./stores/images";
 import { useVolumes } from "./stores/volumes";
-
-function LogsPlaceholder() {
-  return (
-    <div className="screen">
-      <div className="empty">Logs</div>
-    </div>
-  );
-}
 
 export default function App() {
   useEffect(() => {
@@ -48,7 +41,7 @@ export default function App() {
           <Route path="/" element={<Containers />} />
           <Route path="/images" element={<Images />} />
           <Route path="/volumes" element={<Volumes />} />
-          <Route path="/containers/:id/logs" element={<LogsPlaceholder />} />
+          <Route path="/containers/:id/logs" element={<Logs />} />
         </Routes>
       </main>
       <StatusBar />
