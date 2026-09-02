@@ -1,7 +1,7 @@
 # DockBolt MVP 詳細設計
 
 **Date:** 2026-09-02  
-**Status:** Draft（レビュー待ち）  
+**Status:** Approved  
 **Requirements:** `docs/dockbolt_requirements.md`（MVP v0.1）  
 **Approach:** ドメインを Rust `dockbolt-core` に置き、Tauri は IPC、React は表示に限定する
 
