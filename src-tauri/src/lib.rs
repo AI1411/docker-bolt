@@ -315,7 +315,8 @@ async fn run_event_loop(
     let mut first_stream = true;
     let connected_view = {
         let state = app.state::<AppState>();
-        state.inner.lock().await.connection.clone()
+        let inner = state.inner.lock().await;
+        inner.connection.clone()
     };
 
     loop {
