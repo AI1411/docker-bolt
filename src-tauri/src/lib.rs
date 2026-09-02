@@ -230,17 +230,14 @@ async fn run_event_loop(
     let mut first_stream = true;
 
     loop {
-        if !first_stream {
-            for resource in ["containers", "images", "volumes"] {
-                emit_invalidate(&app, resource);
-            }
-        }
-        first_stream = false;
-
         let mut debouncer = InvalidateDebouncer::new();
         let origin = Instant::now();
         let mut stream = docker.events();
         let mut stream_alive = true;
+        // Refresh lists only after a reconnect actually succeeds (first Ok item),
+        // not at the top of every retry — that would poll list_* on failed attempts.
+        let mut invalidate_on_subscribe_ok = !first_stream;
+        first_stream = false;
 
         while stream_alive {
             tokio::select! {
@@ -249,6 +246,12 @@ async fn run_event_loop(
                     match item {
                         Some(Ok(ev)) => {
                             backoff_ms = 200;
+                            if invalidate_on_subscribe_ok {
+                                for resource in ["containers", "images", "volumes"] {
+                                    emit_invalidate(&app, resource);
+                                }
+                                invalidate_on_subscribe_ok = false;
+                            }
                             let now = origin.elapsed().as_millis() as u64;
                             debouncer.note(ev.resource, now);
                             emit_ready(&app, &mut debouncer, now);
