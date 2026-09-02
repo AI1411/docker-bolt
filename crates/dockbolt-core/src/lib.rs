@@ -1,8 +1,10 @@
 pub mod client;
+pub mod engine;
 pub mod error;
 pub mod types;
 
 pub use client::DockerPort;
+pub use engine::*;
 pub use error::DockboltError;
 pub use types::*;
 
@@ -43,5 +45,87 @@ mod error_code_tests {
         );
         assert_eq!(DockboltError::Conflict("c".into()).code(), "conflict");
         assert_eq!(DockboltError::Internal("i".into()).code(), "internal");
+    }
+}
+
+#[cfg(test)]
+mod engine_tests {
+    use crate::engine::{
+        candidate_from_probe, engine_specs, select_engine_id, ENGINE_COLIMA_DEFAULT,
+        ENGINE_DOCKER_DESKTOP, ENGINE_ORBSTACK, ENGINE_UNIX_DEFAULT,
+    };
+    use crate::DockboltError;
+
+    #[test]
+    fn specs_use_priority_order_and_home() {
+        let specs = engine_specs("/Users/dev");
+        let ids: Vec<_> = specs.iter().map(|s| s.engine_id).collect();
+        assert_eq!(
+            ids,
+            [
+                ENGINE_ORBSTACK,
+                ENGINE_DOCKER_DESKTOP,
+                ENGINE_COLIMA_DEFAULT,
+                ENGINE_UNIX_DEFAULT
+            ]
+        );
+        assert_eq!(specs[0].socket_path, "/Users/dev/.orbstack/run/docker.sock");
+        assert_eq!(specs[1].socket_path, "/Users/dev/.docker/run/docker.sock");
+        assert_eq!(
+            specs[2].socket_path,
+            "/Users/dev/.colima/default/docker.sock"
+        );
+        assert_eq!(specs[3].socket_path, "/var/run/docker.sock");
+    }
+
+    #[test]
+    fn missing_path_is_unavailable() {
+        let spec = &engine_specs("/h")[0];
+        let c = candidate_from_probe(spec, false, Ok(()));
+        assert!(!c.available);
+        assert_eq!(c.unavailable_reason.as_deref(), Some("socket_not_found"));
+    }
+
+    #[test]
+    fn ping_timeout_marks_unavailable() {
+        let spec = &engine_specs("/h")[3];
+        let c = candidate_from_probe(spec, true, Err(DockboltError::Timeout));
+        assert!(!c.available);
+        assert_eq!(c.unavailable_reason.as_deref(), Some("timeout"));
+        assert_eq!(c.endpoint, "unix:///var/run/docker.sock");
+    }
+
+    #[test]
+    fn prefer_saved_if_available() {
+        let specs = engine_specs("/h");
+        let mut orb = candidate_from_probe(&specs[0], true, Ok(()));
+        let unix = candidate_from_probe(&specs[3], true, Ok(()));
+        orb.available = true;
+        let list = vec![orb.clone(), unix];
+        assert_eq!(
+            select_engine_id(Some(ENGINE_UNIX_DEFAULT), &list).as_deref(),
+            Some(ENGINE_UNIX_DEFAULT)
+        );
+    }
+
+    #[test]
+    fn skip_dead_saved_and_use_priority() {
+        let specs = engine_specs("/h");
+        let mut orb = candidate_from_probe(&specs[0], true, Ok(()));
+        let mut unix = candidate_from_probe(&specs[3], true, Err(DockboltError::Timeout));
+        unix.available = false;
+        orb.available = true;
+        let list = vec![orb, unix];
+        assert_eq!(
+            select_engine_id(Some(ENGINE_UNIX_DEFAULT), &list).as_deref(),
+            Some(ENGINE_ORBSTACK)
+        );
+    }
+
+    #[test]
+    fn none_when_all_down() {
+        let specs = engine_specs("/h");
+        let c = candidate_from_probe(&specs[0], false, Ok(()));
+        assert_eq!(select_engine_id(None, &[c]), None);
     }
 }
