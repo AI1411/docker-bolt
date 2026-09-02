@@ -1,4 +1,5 @@
 pub mod client;
+pub mod containers;
 pub mod engine;
 pub mod error;
 pub mod types;
@@ -127,5 +128,49 @@ mod engine_tests {
         let specs = engine_specs("/h");
         let c = candidate_from_probe(&specs[0], false, Ok(()));
         assert_eq!(select_engine_id(None, &[c]), None);
+    }
+}
+
+#[cfg(test)]
+mod container_tests {
+    use crate::containers::{
+        force_for_container_delete, normalize_container_name, sort_containers,
+    };
+    use crate::ContainerRow;
+
+    fn row(name: &str, running: bool) -> ContainerRow {
+        ContainerRow {
+            id: format!("id-{name}"),
+            name: name.into(),
+            image: "img".into(),
+            state: if running { "running" } else { "exited" }.into(),
+            running,
+            created_unix: 0,
+        }
+    }
+
+    #[test]
+    fn strips_slash_and_falls_back_to_short_id() {
+        assert_eq!(
+            normalize_container_name(&["/api".into()], "abcdefghijklmnop"),
+            "api"
+        );
+        assert_eq!(normalize_container_name(&[], "abcdefghijklmnop"), "abcdefghijkl");
+    }
+
+    #[test]
+    fn running_sorts_before_name() {
+        let mut rows = vec![row("b", false), row("a", false), row("z", true)];
+        sort_containers(&mut rows);
+        assert_eq!(
+            rows.iter().map(|r| r.name.as_str()).collect::<Vec<_>>(),
+            ["z", "a", "b"]
+        );
+    }
+
+    #[test]
+    fn force_only_when_running() {
+        assert!(force_for_container_delete(true));
+        assert!(!force_for_container_delete(false));
     }
 }
