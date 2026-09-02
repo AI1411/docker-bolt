@@ -1,6 +1,24 @@
 use std::collections::{HashMap, HashSet};
+use std::task::Poll;
 
 use crate::types::ResourceKind;
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum EventsSubscribe {
+    Live,
+    ImmediateError,
+    ImmediateEnd,
+}
+
+/// Classify a single poll of the Docker events stream.
+/// `Pending` or first `Ok` means the subscribe succeeded; immediate `Err` is a failed retry.
+pub fn classify_events_poll<T, E>(poll: &Poll<Option<Result<T, E>>>) -> EventsSubscribe {
+    match poll {
+        Poll::Pending | Poll::Ready(Some(Ok(_))) => EventsSubscribe::Live,
+        Poll::Ready(Some(Err(_))) => EventsSubscribe::ImmediateError,
+        Poll::Ready(None) => EventsSubscribe::ImmediateEnd,
+    }
+}
 
 pub const INVALIDATE_DEBOUNCE_MS: u64 = 100;
 

@@ -300,7 +300,11 @@ mod log_unit_tests {
 
 #[cfg(test)]
 mod event_tests {
-    use crate::events::{resource_from_docker_type, InvalidateDebouncer};
+    use std::task::Poll;
+
+    use crate::events::{
+        classify_events_poll, resource_from_docker_type, EventsSubscribe, InvalidateDebouncer,
+    };
     use crate::ResourceKind;
 
     #[test]
@@ -323,6 +327,34 @@ mod event_tests {
         let ready = d.take_ready(100);
         assert_eq!(ready, vec![ResourceKind::Containers]);
         assert!(d.take_ready(100).is_empty());
+    }
+
+    #[test]
+    fn subscribe_poll_pending_or_ok_is_live() {
+        assert_eq!(
+            classify_events_poll::<(), ()>(&Poll::Pending),
+            EventsSubscribe::Live
+        );
+        assert_eq!(
+            classify_events_poll::<i32, ()>(&Poll::Ready(Some(Ok(1)))),
+            EventsSubscribe::Live
+        );
+    }
+
+    #[test]
+    fn subscribe_poll_immediate_err_is_failed_retry() {
+        assert_eq!(
+            classify_events_poll::<(), &str>(&Poll::Ready(Some(Err("boom")))),
+            EventsSubscribe::ImmediateError
+        );
+    }
+
+    #[test]
+    fn subscribe_poll_immediate_end() {
+        assert_eq!(
+            classify_events_poll::<(), ()>(&Poll::Ready(None)),
+            EventsSubscribe::ImmediateEnd
+        );
     }
 
     #[test]

@@ -34,6 +34,14 @@ export type ConnectionView =
     }
   | { status: "disconnected"; reason: string; message: string };
 
+/** Ignore a stale `connecting` snapshot so it cannot overwrite connected/disconnected. */
+export function shouldApplyConnectionSnapshot(
+  current: ConnectionView,
+  snapshot: ConnectionView,
+): boolean {
+  return !(snapshot.status === "connecting" && current.status !== "connecting");
+}
+
 export type ResourceName = "containers" | "images" | "volumes";
 
 export type LogLine = {

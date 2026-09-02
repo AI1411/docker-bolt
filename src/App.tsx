@@ -15,8 +15,11 @@ import { useVolumes } from "./stores/volumes";
 
 export default function App() {
   useEffect(() => {
-    const pending = [
-      listenConnection((view) => {
+    let cancelled = false;
+    const unlisteners: Array<() => void> = [];
+
+    void (async () => {
+      const unlistenConnection = await listenConnection((view) => {
         if (view.status === "disconnected") {
           useContainers.getState().clear();
           useImages.getState().clear();
@@ -24,19 +27,25 @@ export default function App() {
           useLogs.getState().reset();
         }
         useConnection.getState().setView(view);
-      }),
-      listenInvalidate((resource) => {
+      });
+      const unlistenInvalidate = await listenInvalidate((resource) => {
         if (useConnection.getState().view.status !== "connected") return;
         if (resource === "containers") void useContainers.getState().reload();
         if (resource === "images") void useImages.getState().reload();
         if (resource === "volumes") void useVolumes.getState().reload();
-      }),
-    ];
-    void useConnection.getState().bootstrap();
-    return () => {
-      void Promise.all(pending).then((unlisteners) => {
-        unlisteners.forEach((unlisten) => unlisten());
       });
+      if (cancelled) {
+        unlistenConnection();
+        unlistenInvalidate();
+        return;
+      }
+      unlisteners.push(unlistenConnection, unlistenInvalidate);
+      await useConnection.getState().bootstrap();
+    })();
+
+    return () => {
+      cancelled = true;
+      unlisteners.forEach((unlisten) => unlisten());
     };
   }, []);
 

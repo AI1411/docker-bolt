@@ -4,6 +4,7 @@ import {
   api,
   ipcErrorCode,
   ipcErrorMessage,
+  shouldApplyConnectionSnapshot,
   type ConnectionView,
   type EngineCandidate,
   type RefreshAll,
@@ -84,25 +85,18 @@ export const useConnection = create<ConnectionState>((set, get) => ({
     }
   },
   bootstrap: async () => {
-    const view = await api.connectionStatus().catch(
-      (): ConnectionView => ({
-        status: "disconnected",
-        reason: "internal",
-        message: ipcErrorMessage("Request failed"),
-      }),
-    );
+    const fallback = (): ConnectionView => ({
+      status: "disconnected",
+      reason: "internal",
+      message: ipcErrorMessage("Request failed"),
+    });
+    const applySnapshot = (snapshot: ConnectionView) => {
+      if (!shouldApplyConnectionSnapshot(get().view, snapshot)) return;
+      get().setView(snapshot);
+    };
+    applySnapshot(await api.connectionStatus().catch(fallback));
     const engines = await api.listEngines().catch((): EngineCandidate[] => []);
-    set({ view, engines });
-    if (view.status === "connected") {
-      try {
-        await reloadAll();
-      } catch {
-        await Promise.all([
-          useContainers.getState().reload(),
-          useImages.getState().reload(),
-          useVolumes.getState().reload(),
-        ]);
-      }
-    }
+    set({ engines });
+    applySnapshot(await api.connectionStatus().catch(fallback));
   },
 }));

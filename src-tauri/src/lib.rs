@@ -1,20 +1,25 @@
+use std::pin::Pin;
 use std::sync::Arc;
+use std::task::{Context, Poll};
 use std::time::{Duration, Instant};
 
 use dockbolt_core::bollard_client::{connect_unix, BollardDocker};
 use dockbolt_core::client::{ping, DockerPort};
 use dockbolt_core::containers::sort_containers;
 use dockbolt_core::engine::{candidate_from_probe, engine_specs, select_engine_id};
-use dockbolt_core::events::{InvalidateDebouncer, INVALIDATE_DEBOUNCE_MS};
+use dockbolt_core::events::{
+    classify_events_poll, EventsSubscribe, InvalidateDebouncer, INVALIDATE_DEBOUNCE_MS,
+};
 use dockbolt_core::images::sort_images;
 use dockbolt_core::logs::{
     should_flush, BatchQueue, LogSeq, LOG_BATCH_WINDOW, LOG_CHANNEL_CAPACITY,
 };
 use dockbolt_core::volumes::sort_volumes;
 use dockbolt_core::{
-    ConnectionView, ContainerRow, DockboltError, EngineCandidate, ImageRow, LogLine, VolumeRow,
+    ConnectionView, ContainerRow, DockboltError, EngineCandidate, EngineEvent, ImageRow, LogLine,
+    VolumeRow,
 };
-use futures::StreamExt;
+use futures::{Stream, StreamExt};
 use serde::{Deserialize, Serialize};
 use tauri::{AppHandle, Emitter, Manager, State};
 
@@ -186,14 +191,94 @@ async fn docker_from_state(state: &AppState) -> Result<Arc<BollardDocker>, IpcEr
         .ok_or_else(|| disconnected_err(&inner))
 }
 
-fn abort_background(inner: &mut Inner) {
+fn abort_logs(inner: &mut Inner) {
     if let Some(tx) = inner.log_abort.take() {
         let _ = tx.send(());
     }
+    inner.log_session_id = None;
+}
+
+fn abort_background(inner: &mut Inner) {
+    abort_logs(inner);
     if let Some(tx) = inner.events_abort.take() {
         let _ = tx.send(());
     }
-    inner.log_session_id = None;
+}
+
+fn docker_is_current(inner: &Inner, docker: &Arc<BollardDocker>) -> bool {
+    inner
+        .docker
+        .as_ref()
+        .is_some_and(|current| Arc::ptr_eq(current, docker))
+}
+
+fn poll_events_once(
+    stream: &mut Pin<Box<dyn Stream<Item = Result<EngineEvent, DockboltError>> + Send>>,
+) -> Poll<Option<Result<EngineEvent, DockboltError>>> {
+    let waker = futures::task::noop_waker();
+    let mut cx = Context::from_waker(&waker);
+    stream.as_mut().poll_next(&mut cx)
+}
+
+async fn wait_backoff(
+    abort: &mut tokio::sync::oneshot::Receiver<()>,
+    backoff_ms: u64,
+) -> bool {
+    tokio::select! {
+        biased;
+        _ = &mut *abort => true,
+        _ = tokio::time::sleep(Duration::from_millis(backoff_ms)) => false,
+    }
+}
+
+async fn mark_events_unreachable(
+    app: &AppHandle,
+    docker: &Arc<BollardDocker>,
+    err: &DockboltError,
+) {
+    let state = app.state::<AppState>();
+    let mut inner = state.inner.lock().await;
+    if !docker_is_current(&inner, docker) {
+        return;
+    }
+    abort_logs(&mut inner);
+    let view = ConnectionView::Disconnected {
+        reason: DockboltError::EngineUnreachable(err.to_string())
+            .code()
+            .to_string(),
+        message: err.message(),
+    };
+    inner.connection = view.clone();
+    drop(inner);
+    emit_connection(app, &view);
+}
+
+async fn restore_connected_after_events(
+    app: &AppHandle,
+    docker: &Arc<BollardDocker>,
+    connected_view: &ConnectionView,
+) {
+    if !matches!(connected_view, ConnectionView::Connected { .. }) {
+        return;
+    }
+    let state = app.state::<AppState>();
+    let mut inner = state.inner.lock().await;
+    if !docker_is_current(&inner, docker) {
+        return;
+    }
+    let was_disconnected = matches!(inner.connection, ConnectionView::Disconnected { .. });
+    if !was_disconnected {
+        return;
+    }
+    inner.connection = connected_view.clone();
+    drop(inner);
+    emit_connection(app, connected_view);
+}
+
+fn emit_reconnect_invalidate(app: &AppHandle) {
+    for resource in ["containers", "images", "volumes"] {
+        emit_invalidate(app, resource);
+    }
 }
 
 fn emit_connection(app: &AppHandle, view: &ConnectionView) {
@@ -228,35 +313,71 @@ async fn run_event_loop(
 ) {
     let mut backoff_ms = 200u64;
     let mut first_stream = true;
+    let connected_view = {
+        let state = app.state::<AppState>();
+        state.inner.lock().await.connection.clone()
+    };
 
     loop {
         let mut debouncer = InvalidateDebouncer::new();
         let origin = Instant::now();
         let mut stream = docker.events();
-        let mut stream_alive = true;
-        // Refresh lists only after a reconnect actually succeeds (first Ok item),
-        // not at the top of every retry — that would poll list_* on failed attempts.
-        let mut invalidate_on_subscribe_ok = !first_stream;
+        let is_reconnect = !first_stream;
         first_stream = false;
 
+        let first = poll_events_once(&mut stream);
+        match classify_events_poll(&first) {
+            EventsSubscribe::ImmediateError => {
+                let err = match first {
+                    Poll::Ready(Some(Err(e))) => e,
+                    _ => DockboltError::EngineUnreachable("events stream failed".into()),
+                };
+                mark_events_unreachable(&app, &docker, &err).await;
+                if wait_backoff(&mut abort, backoff_ms).await {
+                    return;
+                }
+                backoff_ms = backoff_ms.saturating_mul(2).min(5000);
+                continue;
+            }
+            EventsSubscribe::ImmediateEnd => {
+                if wait_backoff(&mut abort, backoff_ms).await {
+                    return;
+                }
+                backoff_ms = backoff_ms.saturating_mul(2).min(5000);
+                continue;
+            }
+            EventsSubscribe::Live => {
+                backoff_ms = 200;
+                if is_reconnect {
+                    restore_connected_after_events(&app, &docker, &connected_view).await;
+                    emit_reconnect_invalidate(&app);
+                }
+                if let Poll::Ready(Some(Ok(ev))) = first {
+                    let now = origin.elapsed().as_millis() as u64;
+                    debouncer.note(ev.resource, now);
+                    emit_ready(&app, &mut debouncer, now);
+                }
+            }
+        }
+
+        let mut stream_alive = true;
         while stream_alive {
             tokio::select! {
+                biased;
                 _ = &mut abort => return,
                 item = stream.next() => {
                     match item {
                         Some(Ok(ev)) => {
                             backoff_ms = 200;
-                            if invalidate_on_subscribe_ok {
-                                for resource in ["containers", "images", "volumes"] {
-                                    emit_invalidate(&app, resource);
-                                }
-                                invalidate_on_subscribe_ok = false;
-                            }
                             let now = origin.elapsed().as_millis() as u64;
                             debouncer.note(ev.resource, now);
                             emit_ready(&app, &mut debouncer, now);
                         }
-                        Some(Err(_)) | None => {
+                        Some(Err(err)) => {
+                            mark_events_unreachable(&app, &docker, &err).await;
+                            stream_alive = false;
+                        }
+                        None => {
                             stream_alive = false;
                         }
                     }
@@ -268,9 +389,8 @@ async fn run_event_loop(
             }
         }
 
-        tokio::select! {
-            _ = &mut abort => return,
-            _ = tokio::time::sleep(Duration::from_millis(backoff_ms)) => {}
+        if wait_backoff(&mut abort, backoff_ms).await {
+            return;
         }
         backoff_ms = backoff_ms.saturating_mul(2).min(5000);
     }

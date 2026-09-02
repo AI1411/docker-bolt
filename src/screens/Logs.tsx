@@ -3,6 +3,7 @@ import { useParams } from "react-router-dom";
 import { VirtualTable } from "../components/VirtualTable";
 import { filterLines, type StreamFilter } from "../lib/logFilter";
 import { shortId } from "../lib/format";
+import { useConnection } from "../stores/connection";
 import { useContainers } from "../stores/containers";
 import { useLogs } from "../stores/logs";
 
@@ -24,6 +25,10 @@ function endedMessage(reason: string | null, error: string | null): string | nul
 export function Logs() {
   const { id } = useParams();
   const containerId = id ? decodeURIComponent(id) : "";
+  const connectionStatus = useConnection((s) => s.view.status);
+  const engineId = useConnection((s) =>
+    s.view.status === "connected" ? s.view.engine_id : null,
+  );
   const container = useContainers((s) => s.rows.find((row) => row.id === containerId));
   const lines = useLogs((s) => s.lines);
   const query = useLogs((s) => s.query);
@@ -44,11 +49,12 @@ export function Logs() {
 
   useEffect(() => {
     if (!containerId) return;
+    if (connectionStatus !== "connected") return;
     void useLogs.getState().start(containerId);
     return () => {
       void useLogs.getState().stop();
     };
-  }, [containerId]);
+  }, [containerId, connectionStatus, engineId]);
 
   return (
     <div className="screen">
