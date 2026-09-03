@@ -41,6 +41,7 @@ test("disconnecting clears compose state", () => {
   useConnection.getState().setView({
     status: "disconnected",
     reason: "engine_unreachable",
+    message: "events failed",
   });
 
   expect(clearCompose).toHaveBeenCalledOnce();
