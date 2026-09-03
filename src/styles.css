@@ -10,7 +10,7 @@
   --border: #333;
   --accent: #3b82f6;
   --danger: #dc2626;
-  --status-h: 26px;
+  --status-h: 32px;
   --sidebar-w: 168px;
 }
 
@@ -41,8 +41,8 @@ select {
   color: var(--fg);
   background: #2b2b2b;
   border: 1px solid var(--border);
-  height: 22px;
-  padding: 0 8px;
+  height: 28px;
+  padding: 0 10px;
 }
 
 button:disabled,
@@ -89,7 +89,8 @@ button.danger:not(:disabled):hover {
 .nav {
   color: var(--fg);
   text-decoration: none;
-  padding: 6px 12px;
+  padding: 8px 12px;
+  min-height: 32px;
 }
 
 .nav.active {
@@ -114,7 +115,7 @@ button.danger:not(:disabled):hover {
   padding: 0 8px;
   border-top: 1px solid var(--border);
   background: var(--bg-sidebar);
-  font-size: 11px;
+  font-size: 12px;
 }
 
 .status-text {
@@ -144,7 +145,7 @@ button.danger:not(:disabled):hover {
   display: flex;
   gap: 6px;
   align-items: center;
-  padding: 6px 8px;
+  padding: 8px;
   border-bottom: 1px solid var(--border);
   background: var(--bg-toolbar);
 }
@@ -272,8 +273,8 @@ button.danger:not(:disabled):hover {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 22px;
-  height: 22px;
+  width: 28px;
+  height: 28px;
   padding: 0;
   color: var(--fg-muted);
   background: transparent;
@@ -373,7 +374,7 @@ button.danger:not(:disabled):hover {
 .toolbar .log-search {
   flex: 1;
   min-width: 120px;
-  height: 22px;
+  height: 28px;
   font: inherit;
   color: var(--fg);
   background: #2b2b2b;
