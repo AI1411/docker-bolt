@@ -333,7 +333,10 @@ mod event_tests {
             resources_from_docker_type("network"),
             vec![ResourceKind::Compose]
         );
-        assert_eq!(resources_from_docker_type("plugin"), Vec::<ResourceKind>::new());
+        assert_eq!(
+            resources_from_docker_type("plugin"),
+            Vec::<ResourceKind>::new()
+        );
     }
 
     #[test]

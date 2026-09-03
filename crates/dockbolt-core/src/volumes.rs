@@ -14,7 +14,7 @@ pub async fn delete_volume(docker: &dyn DockerPort, name: &str) -> Result<(), Do
 mod tests {
     use super::*;
     use crate::client::DockerPort;
-    use crate::types::{ContainerRow, EngineEvent, ImageRow, RawLogChunk};
+    use crate::types::{ContainerRow, EngineEvent, ImageRow, NetworkRow, RawLogChunk};
     use async_trait::async_trait;
     use futures::Stream;
     use std::pin::Pin;
@@ -30,6 +30,18 @@ mod tests {
             Ok(vec![])
         }
         async fn remove_container(&self, _id: &str, _force: bool) -> Result<(), DockboltError> {
+            Ok(())
+        }
+        async fn start_container(&self, _id: &str) -> Result<(), DockboltError> {
+            Ok(())
+        }
+        async fn stop_container(&self, _id: &str) -> Result<(), DockboltError> {
+            Ok(())
+        }
+        async fn list_networks(&self) -> Result<Vec<NetworkRow>, DockboltError> {
+            Ok(vec![])
+        }
+        async fn remove_network(&self, _id: &str) -> Result<(), DockboltError> {
             Ok(())
         }
         async fn list_images(&self) -> Result<Vec<ImageRow>, DockboltError> {
