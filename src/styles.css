@@ -27,6 +27,7 @@ body,
 
 html {
   font: 13px/1.4 "IBM Plex Sans", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  color-scheme: dark;
 }
 
 body {
