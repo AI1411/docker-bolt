@@ -6,6 +6,8 @@ export type ContainerRow = {
   name: string;
   image: string;
   image_id?: string;
+  compose_project?: string;
+  compose_service?: string;
   state: string;
   running: boolean;
   created_unix: number;
@@ -18,6 +20,14 @@ export type ImageRow = {
   in_use: boolean;
 };
 export type VolumeRow = { name: string; driver: string };
+export type ComposeProjectStatus = "running" | "partial" | "stopped";
+export type ComposeProjectRow = {
+  project: string;
+  status: ComposeProjectStatus;
+  service_count: number;
+  running_count: number;
+  container_count: number;
+};
 export type EngineCandidate = {
   engine_id: string;
   name: string;
@@ -44,7 +54,7 @@ export function shouldApplyConnectionSnapshot(
   return !(snapshot.status === "connecting" && current.status !== "connecting");
 }
 
-export type ResourceName = "containers" | "images" | "volumes";
+export type ResourceName = "containers" | "images" | "volumes" | "compose";
 
 export type LogLine = {
   seq: number;
@@ -80,13 +90,20 @@ export const api = {
   listContainers: () => invoke<ContainerRow[]>("list_containers"),
   listImages: () => invoke<ImageRow[]>("list_images"),
   listVolumes: () => invoke<VolumeRow[]>("list_volumes"),
+  listComposeProjects: () => invoke<ComposeProjectRow[]>("list_compose_projects"),
   deleteContainer: (id: string) => invoke("delete_container", { id }),
   deleteImage: (id: string) => invoke("delete_image", { id }),
   deleteVolume: (name: string) => invoke("delete_volume", { name }),
+  startComposeProject: (project: string) =>
+    invoke("start_compose_project", { project }),
+  stopComposeProject: (project: string) =>
+    invoke("stop_compose_project", { project }),
+  downComposeProject: (project: string) =>
+    invoke("down_compose_project", { project }),
   refresh: (resource: ResourceName | "all") =>
-    invoke<RefreshAll | ContainerRow[] | ImageRow[] | VolumeRow[]>("refresh", {
-      resource,
-    }),
+    invoke<
+      RefreshAll | ContainerRow[] | ImageRow[] | VolumeRow[] | ComposeProjectRow[]
+    >("refresh", { resource }),
   startLogs: (container_id: string) =>
     invoke<{ session_id: string }>("start_logs", { container_id }),
   stopLogs: (session_id: string) => invoke("stop_logs", { session_id }),
