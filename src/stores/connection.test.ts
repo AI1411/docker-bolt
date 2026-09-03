@@ -1,19 +1,54 @@
-import { expect, test } from "vitest";
+import { afterEach, expect, test, vi } from "vitest";
 import {
+  api,
   shouldApplyConnectionSnapshot,
   type ConnectionView,
 } from "../lib/tauri";
+import { useCompose } from "./compose";
+import { useConnection } from "./connection";
+
+const connected: ConnectionView = {
+  status: "connected",
+  engine_id: "orbstack",
+  name: "OrbStack",
+  endpoint: "unix:///tmp/docker.sock",
+  api_version: "1.44",
+};
+
+afterEach(() => {
+  vi.restoreAllMocks();
+});
+
+test("entering connected reloads compose outside the refresh all payload", () => {
+  useConnection.setState({ view: { status: "connecting" } });
+  const refresh = vi
+    .spyOn(api, "refresh")
+    .mockResolvedValue({ containers: [], images: [], volumes: [] });
+  const reloadCompose = vi
+    .spyOn(useCompose.getState(), "reload")
+    .mockResolvedValue();
+
+  useConnection.getState().setView(connected);
+
+  expect(refresh).toHaveBeenCalledWith("all");
+  expect(reloadCompose).toHaveBeenCalledOnce();
+});
+
+test("disconnecting clears compose state", () => {
+  useConnection.setState({ view: connected });
+  const clearCompose = vi.spyOn(useCompose.getState(), "clear");
+
+  useConnection.getState().setView({
+    status: "disconnected",
+    reason: "engine_unreachable",
+  });
+
+  expect(clearCompose).toHaveBeenCalledOnce();
+});
 
 test("stale connecting snapshot does not overwrite connected", () => {
-  const current: ConnectionView = {
-    status: "connected",
-    engine_id: "orbstack",
-    name: "OrbStack",
-    endpoint: "unix:///tmp/docker.sock",
-    api_version: "1.44",
-  };
   expect(
-    shouldApplyConnectionSnapshot(current, { status: "connecting" }),
+    shouldApplyConnectionSnapshot(connected, { status: "connecting" }),
   ).toBe(false);
 });
 
