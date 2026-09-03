@@ -10,7 +10,7 @@ use futures::{Stream, StreamExt};
 use crate::client::DockerPort;
 use crate::containers::normalize_container_name;
 use crate::error::{map_status_and_message, DockboltError};
-use crate::events::resource_from_docker_type;
+use crate::events::resources_from_docker_type;
 use crate::logs::{parse_docker_log_text, LOG_TAIL};
 use crate::types::{ContainerRow, EngineEvent, ImageRow, LogStream, RawLogChunk, VolumeRow};
 
@@ -109,6 +109,8 @@ impl DockerPort for BollardDocker {
                     state,
                     created_unix: c.created.unwrap_or(0),
                     id,
+                    compose_project: None,
+                    compose_service: None,
                 }
             })
             .collect())
@@ -228,8 +230,8 @@ impl DockerPort for BollardDocker {
                 match item {
                     Ok(ev) => {
                         if let Some(ty) = docker_event_type(&ev) {
-                            if let Some(resource) = resource_from_docker_type(&ty) {
-                                yield Ok(EngineEvent { resource });
+                            for kind in resources_from_docker_type(&ty) {
+                                yield Ok(EngineEvent { resource: kind });
                             }
                         }
                     }

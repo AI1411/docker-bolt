@@ -92,6 +92,8 @@ mod delete_tests {
             state: "running".into(),
             running: true,
             created_unix: 1,
+            compose_project: None,
+            compose_service: None,
         };
         delete_container(&docker, &row).await.unwrap();
         assert_eq!(*last.lock().unwrap(), Some(true));
@@ -111,6 +113,8 @@ mod delete_tests {
             state: "exited".into(),
             running: false,
             created_unix: 1,
+            compose_project: None,
+            compose_service: None,
         };
         delete_container(&docker, &row).await.unwrap();
         assert_eq!(*last.lock().unwrap(), Some(false));

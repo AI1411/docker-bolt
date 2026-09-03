@@ -121,6 +121,8 @@ mod classify_tests {
             state: "exited".into(),
             running: false,
             created_unix: 0,
+            compose_project: None,
+            compose_service: None,
         }
     }
 

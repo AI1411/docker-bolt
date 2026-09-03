@@ -22,12 +22,13 @@ pub fn classify_events_poll<T, E>(poll: &Poll<Option<Result<T, E>>>) -> EventsSu
 
 pub const INVALIDATE_DEBOUNCE_MS: u64 = 100;
 
-pub fn resource_from_docker_type(ty: &str) -> Option<ResourceKind> {
+pub fn resources_from_docker_type(ty: &str) -> Vec<ResourceKind> {
     match ty {
-        "container" => Some(ResourceKind::Containers),
-        "image" => Some(ResourceKind::Images),
-        "volume" => Some(ResourceKind::Volumes),
-        _ => None,
+        "container" => vec![ResourceKind::Containers, ResourceKind::Compose],
+        "image" => vec![ResourceKind::Images],
+        "volume" => vec![ResourceKind::Volumes],
+        "network" => vec![ResourceKind::Compose],
+        _ => vec![],
     }
 }
 
