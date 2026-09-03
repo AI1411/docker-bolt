@@ -1,8 +1,13 @@
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { ConfirmDialog } from "../components/ConfirmDialog";
 import { VirtualTable } from "../components/VirtualTable";
 import { fmtBytes, fmtTime, shortId } from "../lib/format";
-import { buildImageTableItems } from "../lib/imageGroups";
+import {
+  buildImageTableItems,
+  rangeIds,
+  toggleId,
+  unusedImageIds,
+} from "../lib/imageGroups";
 import { api, ipcErrorCode, ipcErrorMessage, type ImageRow } from "../lib/tauri";
 import { useConnection } from "../stores/connection";
 import { useImages } from "../stores/images";
@@ -22,9 +27,7 @@ function TrashIcon() {
   );
 }
 
-type Dialog =
-  | { kind: "delete"; title: string; body: string; id: string }
-  | { kind: "error"; body: string };
+type Dialog = { kind: "error"; body: string };
 
 export function Images() {
   const view = useConnection((s) => s.view);
@@ -32,40 +35,81 @@ export function Images() {
   const rows = useImages((s) => s.rows);
   const loading = useImages((s) => s.loading);
   const error = useImages((s) => s.error);
-  const selectedId = useImages((s) => s.selectedId);
+  const selectedIds = useImages((s) => s.selectedIds);
   const select = useImages((s) => s.select);
+  const setSelectedIds = useImages((s) => s.setSelectedIds);
   const reload = useImages((s) => s.reload);
-  const removeRow = useImages((s) => s.removeRow);
-  const selected = rows.find((row) => row.id === selectedId) ?? null;
+  const removeRows = useImages((s) => s.removeRows);
   const connected = view.status === "connected";
   const [dialog, setDialog] = useState<Dialog | null>(null);
   const [busy, setBusy] = useState(false);
+  const anchorId = useRef<string | null>(null);
   const items = useMemo(() => buildImageTableItems(rows), [rows]);
+  const unusedIds = useMemo(() => unusedImageIds(rows), [rows]);
+  const selectedUnused = selectedIds.filter((id) => unusedIds.includes(id));
+  const selectedInUse = rows.find(
+    (row) => row.in_use && selectedIds.length === 1 && selectedIds[0] === row.id,
+  );
+  const allUnusedSelected = unusedIds.length > 0 && unusedIds.every((id) => selectedIds.includes(id));
+  const someUnusedSelected = selectedUnused.length > 0 && !allUnusedSelected;
+  const deleteTargets = selectedUnused.length > 0 ? selectedUnused : selectedInUse ? [selectedInUse.id] : [];
 
-  function askDelete(row: ImageRow) {
-    if (busy) return;
-    setDialog({
-      kind: "delete",
-      title: "Delete image",
-      body: `Delete ${imageLabel(row)}?`,
-      id: row.id,
-    });
-  }
-
-  async function confirmDelete(id: string) {
+  async function deleteImages(ids: string[]) {
+    if (busy || ids.length === 0) return;
     setBusy(true);
+    const deleted: string[] = [];
+    let sawNotFound = false;
+    let lastError: string | null = null;
     try {
-      await api.deleteImage(id);
-      removeRow(id);
-      setDialog(null);
-    } catch (err) {
-      if (ipcErrorCode(err) === "not_found") {
-        await reload();
+      for (const id of ids) {
+        try {
+          await api.deleteImage(id);
+          deleted.push(id);
+        } catch (err) {
+          if (ipcErrorCode(err) === "not_found") {
+            sawNotFound = true;
+          } else {
+            lastError = ipcErrorMessage(err);
+          }
+        }
       }
-      setDialog({ kind: "error", body: ipcErrorMessage(err) });
+      if (deleted.length > 0) removeRows(deleted);
+      if (sawNotFound) await reload();
+      if (lastError) setDialog({ kind: "error", body: lastError });
     } finally {
       setBusy(false);
     }
+  }
+
+  function onUnusedRowClick(
+    id: string,
+    event: { shiftKey: boolean; metaKey: boolean; ctrlKey: boolean },
+  ) {
+    if (event.shiftKey && anchorId.current) {
+      setSelectedIds(rangeIds(unusedIds, anchorId.current, id));
+      return;
+    }
+    if (event.metaKey || event.ctrlKey) {
+      setSelectedIds(toggleId(selectedUnused, id));
+      anchorId.current = id;
+      return;
+    }
+    setSelectedIds([id]);
+    anchorId.current = id;
+  }
+
+  function onUnusedCheck(id: string, event: { shiftKey: boolean }) {
+    if (event.shiftKey && anchorId.current) {
+      setSelectedIds(rangeIds(unusedIds, anchorId.current, id));
+      return;
+    }
+    setSelectedIds(toggleId(selectedUnused, id));
+    anchorId.current = id;
+  }
+
+  function toggleAllUnused() {
+    setSelectedIds(allUnusedSelected ? [] : unusedIds);
+    anchorId.current = unusedIds[0] ?? null;
   }
 
   function body() {
@@ -91,6 +135,7 @@ export function Images() {
         rowHeight={32}
         header={
           <div className="row head" data-cols="images">
+            <span className="cell" />
             <span className="cell">Tags</span>
             <span className="cell">ID</span>
             <span className="cell">Size</span>
@@ -101,9 +146,24 @@ export function Images() {
         rowRenderer={(index) => {
           const item = items[index];
           if (item.kind === "section") {
+            const isUnused = item.title === "Unused";
             return (
               <div className="row section" data-cols="images">
-                <span className="cell">
+                <span className="cell check">
+                  {isUnused ? (
+                    <input
+                      type="checkbox"
+                      checked={allUnusedSelected}
+                      ref={(el) => {
+                        if (el) el.indeterminate = someUnusedSelected;
+                      }}
+                      disabled={!connected || busy || unusedIds.length === 0}
+                      aria-label="Select all unused images"
+                      onChange={toggleAllUnused}
+                    />
+                  ) : null}
+                </span>
+                <span className="cell section-title">
                   {item.title} ({item.count})
                 </span>
               </div>
@@ -111,12 +171,35 @@ export function Images() {
           }
           const row = item.row;
           const tags = row.tags.length > 0 ? row.tags.join(", ") : "<none>";
+          const selected = selectedIds.includes(row.id);
           return (
             <div
-              className={`row ${row.id === selectedId ? "selected" : ""}`}
+              className={`row ${selected ? "selected" : ""}`}
               data-cols="images"
-              onClick={() => select(row.id)}
+              onClick={(event) => {
+                if (row.in_use) {
+                  select(row.id);
+                  return;
+                }
+                onUnusedRowClick(row.id, event);
+              }}
             >
+              <span className="cell check">
+                {!row.in_use ? (
+                  <input
+                    type="checkbox"
+                    checked={selected}
+                    disabled={!connected || busy}
+                    aria-label={`Select ${imageLabel(row)}`}
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      event.preventDefault();
+                      onUnusedCheck(row.id, event);
+                    }}
+                    onChange={() => undefined}
+                  />
+                ) : null}
+              </span>
               <span className="cell" title={tags}>
                 {tags}
               </span>
@@ -133,7 +216,7 @@ export function Images() {
                     disabled={!connected || busy}
                     onClick={(event) => {
                       event.stopPropagation();
-                      askDelete(row);
+                      void deleteImages([row.id]);
                     }}
                   >
                     <TrashIcon />
@@ -155,29 +238,14 @@ export function Images() {
         </button>
         <button
           type="button"
-          disabled={!connected || !selected || busy}
-          onClick={() => {
-            if (!selected) return;
-            askDelete(selected);
-          }}
+          disabled={!connected || deleteTargets.length === 0 || busy}
+          onClick={() => void deleteImages(deleteTargets)}
         >
-          Delete
+          Delete{selectedUnused.length > 1 ? ` (${selectedUnused.length})` : ""}
         </button>
       </div>
       {body()}
-      {dialog?.kind === "delete" ? (
-        <ConfirmDialog
-          title={dialog.title}
-          body={dialog.body}
-          confirmLabel="Delete"
-          confirmDisabled={busy}
-          onCancel={() => {
-            if (!busy) setDialog(null);
-          }}
-          onConfirm={() => void confirmDelete(dialog.id)}
-        />
-      ) : null}
-      {dialog?.kind === "error" ? (
+      {dialog ? (
         <ConfirmDialog
           title="Error"
           body={dialog.body}

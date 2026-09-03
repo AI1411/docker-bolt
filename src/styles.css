@@ -223,8 +223,8 @@ button.danger:not(:disabled):hover {
   background: #161616;
 }
 
-.row.section .cell {
-  grid-column: 1 / -1;
+.row.section .cell.section-title {
+  grid-column: 2 / -1;
 }
 
 .row[data-cols="containers"] {
@@ -232,7 +232,19 @@ button.danger:not(:disabled):hover {
 }
 
 .row[data-cols="images"] {
-  grid-template-columns: minmax(120px, 2fr) 108px 88px 132px 28px;
+  grid-template-columns: 22px minmax(120px, 2fr) 108px 88px 132px 28px;
+}
+
+.cell.check {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding-right: 0;
+}
+
+.cell.check input {
+  margin: 0;
+  accent-color: var(--accent);
 }
 
 .cell.actions {

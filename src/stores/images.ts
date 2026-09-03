@@ -5,35 +5,45 @@ type ImagesState = {
   rows: ImageRow[];
   loading: boolean;
   error: string | null;
-  selectedId: string | null;
+  selectedIds: string[];
   setRows: (rows: ImageRow[]) => void;
   clear: () => void;
+  setSelectedIds: (ids: string[]) => void;
   select: (id: string | null) => void;
   removeRow: (id: string) => void;
+  removeRows: (ids: string[]) => void;
   reload: () => Promise<void>;
 };
+
+function keepSelected(rows: ImageRow[], selectedIds: string[]): string[] {
+  const present = new Set(rows.map((row) => row.id));
+  return selectedIds.filter((id) => present.has(id));
+}
 
 export const useImages = create<ImagesState>((set, get) => ({
   rows: [],
   loading: false,
   error: null,
-  selectedId: null,
+  selectedIds: [],
   setRows: (rows) => {
-    const selectedId = get().selectedId;
     set({
       rows,
       loading: false,
       error: null,
-      selectedId: selectedId && rows.some((row) => row.id === selectedId) ? selectedId : null,
+      selectedIds: keepSelected(rows, get().selectedIds),
     });
   },
-  clear: () => set({ rows: [], loading: false, error: null, selectedId: null }),
-  select: (id) => set({ selectedId: id }),
-  removeRow: (id) =>
+  clear: () => set({ rows: [], loading: false, error: null, selectedIds: [] }),
+  setSelectedIds: (ids) => set({ selectedIds: ids }),
+  select: (id) => set({ selectedIds: id ? [id] : [] }),
+  removeRow: (id) => get().removeRows([id]),
+  removeRows: (ids) => {
+    const drop = new Set(ids);
     set((state) => ({
-      rows: state.rows.filter((row) => row.id !== id),
-      selectedId: state.selectedId === id ? null : state.selectedId,
-    })),
+      rows: state.rows.filter((row) => !drop.has(row.id)),
+      selectedIds: state.selectedIds.filter((id) => !drop.has(id)),
+    }));
+  },
   reload: async () => {
     set({ loading: true, error: null });
     try {

@@ -1,5 +1,10 @@
 import { expect, test } from "vitest";
-import { buildImageTableItems } from "./lib/imageGroups";
+import {
+  buildImageTableItems,
+  rangeIds,
+  toggleId,
+  unusedImageIds,
+} from "./lib/imageGroups";
 import type { ImageRow } from "./lib/tauri";
 
 function row(id: string, in_use: boolean): ImageRow {
@@ -20,4 +25,18 @@ test("omits empty sections", () => {
   const items = buildImageTableItems([row("a", false)]);
   expect(items.map((i) => i.kind)).toEqual(["section", "image"]);
   expect(items[0]).toMatchObject({ title: "Unused", count: 1 });
+});
+
+test("unusedImageIds skips in-use", () => {
+  expect(unusedImageIds([row("u", false), row("i", true)])).toEqual(["u"]);
+});
+
+test("toggleId adds and removes", () => {
+  expect(toggleId(["a"], "b")).toEqual(["a", "b"]);
+  expect(toggleId(["a", "b"], "a")).toEqual(["b"]);
+});
+
+test("rangeIds selects inclusive span", () => {
+  expect(rangeIds(["a", "b", "c", "d"], "b", "d")).toEqual(["b", "c", "d"]);
+  expect(rangeIds(["a", "b", "c"], "c", "a")).toEqual(["a", "b", "c"]);
 });
