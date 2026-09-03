@@ -55,6 +55,7 @@ export function shouldApplyConnectionSnapshot(
 }
 
 export type ResourceName = "containers" | "images" | "volumes" | "compose";
+export type RefreshResourceName = Exclude<ResourceName, "compose">;
 
 export type LogLine = {
   seq: number;
@@ -100,10 +101,10 @@ export const api = {
     invoke("stop_compose_project", { project }),
   downComposeProject: (project: string) =>
     invoke("down_compose_project", { project }),
-  refresh: (resource: ResourceName | "all") =>
-    invoke<
-      RefreshAll | ContainerRow[] | ImageRow[] | VolumeRow[] | ComposeProjectRow[]
-    >("refresh", { resource }),
+  refresh: (resource: RefreshResourceName | "all") =>
+    invoke<RefreshAll | ContainerRow[] | ImageRow[] | VolumeRow[]>("refresh", {
+      resource,
+    }),
   startLogs: (container_id: string) =>
     invoke<{ session_id: string }>("start_logs", { container_id }),
   stopLogs: (session_id: string) => invoke("stop_logs", { session_id }),

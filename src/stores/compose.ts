@@ -12,32 +12,42 @@ type ComposeState = {
   reload: () => Promise<void>;
 };
 
-export const useCompose = create<ComposeState>((set, get) => ({
-  rows: [],
-  loading: false,
-  error: null,
-  selectedProject: null,
-  setRows: (rows) => {
-    const selectedProject = get().selectedProject;
-    set({
-      rows,
-      loading: false,
-      error: null,
-      selectedProject:
-        selectedProject && rows.some((row) => row.project === selectedProject)
-          ? selectedProject
-          : null,
-    });
-  },
-  clear: () => set({ rows: [], loading: false, error: null, selectedProject: null }),
-  select: (project) => set({ selectedProject: project }),
-  reload: async () => {
-    set({ loading: true, error: null });
-    try {
-      const rows = await api.listComposeProjects();
-      get().setRows(rows);
-    } catch (err) {
-      set({ loading: false, error: ipcErrorMessage(err) });
-    }
-  },
-}));
+export const useCompose = create<ComposeState>((set, get) => {
+  let reloadGeneration = 0;
+
+  return {
+    rows: [],
+    loading: false,
+    error: null,
+    selectedProject: null,
+    setRows: (rows) => {
+      const selectedProject = get().selectedProject;
+      set({
+        rows,
+        loading: false,
+        error: null,
+        selectedProject:
+          selectedProject && rows.some((row) => row.project === selectedProject)
+            ? selectedProject
+            : null,
+      });
+    },
+    clear: () => {
+      reloadGeneration += 1;
+      set({ rows: [], loading: false, error: null, selectedProject: null });
+    },
+    select: (project) => set({ selectedProject: project }),
+    reload: async () => {
+      const generation = ++reloadGeneration;
+      set({ loading: true, error: null });
+      try {
+        const rows = await api.listComposeProjects();
+        if (generation === reloadGeneration) get().setRows(rows);
+      } catch (err) {
+        if (generation === reloadGeneration) {
+          set({ loading: false, error: ipcErrorMessage(err) });
+        }
+      }
+    },
+  };
+});
