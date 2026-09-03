@@ -3,11 +3,13 @@ import { Route, Routes } from "react-router-dom";
 import { Sidebar } from "./components/Sidebar";
 import { StatusBar } from "./components/StatusBar";
 import { listenConnection, listenInvalidate } from "./lib/tauri";
+import { Compose } from "./screens/Compose";
 import { Containers } from "./screens/Containers";
 import { Images } from "./screens/Images";
 import { Logs } from "./screens/Logs";
 import { Volumes } from "./screens/Volumes";
 import { useConnection } from "./stores/connection";
+import { useCompose } from "./stores/compose";
 import { useContainers } from "./stores/containers";
 import { useImages } from "./stores/images";
 import { useLogs } from "./stores/logs";
@@ -21,6 +23,7 @@ export default function App() {
     void (async () => {
       const unlistenConnection = await listenConnection((view) => {
         if (view.status === "disconnected") {
+          useCompose.getState().clear();
           useContainers.getState().clear();
           useImages.getState().clear();
           useVolumes.getState().clear();
@@ -36,6 +39,7 @@ export default function App() {
         }
         if (resource === "images") void useImages.getState().reload();
         if (resource === "volumes") void useVolumes.getState().reload();
+        if (resource === "compose") void useCompose.getState().reload();
       });
       if (cancelled) {
         unlistenConnection();
@@ -58,6 +62,7 @@ export default function App() {
       <main className="main">
         <Routes>
           <Route path="/" element={<Containers />} />
+          <Route path="/compose" element={<Compose />} />
           <Route path="/images" element={<Images />} />
           <Route path="/volumes" element={<Volumes />} />
           <Route path="/containers/:id/logs" element={<Logs />} />

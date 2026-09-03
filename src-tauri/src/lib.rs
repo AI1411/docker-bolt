@@ -16,8 +16,8 @@ use dockbolt_core::logs::{
 };
 use dockbolt_core::volumes::sort_volumes;
 use dockbolt_core::{
-    ConnectionView, ContainerRow, DockboltError, EngineCandidate, EngineEvent, ImageRow, LogLine,
-    VolumeRow,
+    ComposeProjectRow, ConnectionView, ContainerRow, DockboltError, EngineCandidate, EngineEvent,
+    ImageRow, LogLine, VolumeRow,
 };
 use futures::{Stream, StreamExt};
 use serde::{Deserialize, Serialize};
@@ -73,6 +73,12 @@ pub struct IdArg {
 #[serde(rename_all = "snake_case")]
 pub struct NameArg {
     pub name: String,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub struct ProjectArg {
+    pub project: String,
 }
 
 #[derive(Debug, Deserialize)]
@@ -269,7 +275,7 @@ async fn restore_connected_after_events(
 }
 
 fn emit_reconnect_invalidate(app: &AppHandle) {
-    for resource in ["containers", "images", "volumes"] {
+    for resource in ["containers", "images", "volumes", "compose"] {
         emit_invalidate(app, resource);
     }
 }
@@ -556,6 +562,49 @@ async fn list_volumes(state: State<'_, AppState>) -> Result<Vec<VolumeRow>, IpcE
 }
 
 #[tauri::command(rename_all = "snake_case")]
+async fn list_compose_projects(
+    state: State<'_, AppState>,
+) -> Result<Vec<ComposeProjectRow>, IpcError> {
+    let docker = docker_from_state(&state).await?;
+    dockbolt_core::compose::list_compose_projects(docker.as_ref())
+        .await
+        .map_err(Into::into)
+}
+
+#[tauri::command(rename_all = "snake_case")]
+async fn start_compose_project(
+    state: State<'_, AppState>,
+    project: String,
+) -> Result<OkReply, IpcError> {
+    let ProjectArg { project } = ProjectArg { project };
+    let docker = docker_from_state(&state).await?;
+    dockbolt_core::compose::start_compose_project(docker.as_ref(), &project).await?;
+    Ok(OkReply { ok: true })
+}
+
+#[tauri::command(rename_all = "snake_case")]
+async fn stop_compose_project(
+    state: State<'_, AppState>,
+    project: String,
+) -> Result<OkReply, IpcError> {
+    let ProjectArg { project } = ProjectArg { project };
+    let docker = docker_from_state(&state).await?;
+    dockbolt_core::compose::stop_compose_project(docker.as_ref(), &project).await?;
+    Ok(OkReply { ok: true })
+}
+
+#[tauri::command(rename_all = "snake_case")]
+async fn down_compose_project(
+    state: State<'_, AppState>,
+    project: String,
+) -> Result<OkReply, IpcError> {
+    let ProjectArg { project } = ProjectArg { project };
+    let docker = docker_from_state(&state).await?;
+    dockbolt_core::compose::down_compose_project(docker.as_ref(), &project).await?;
+    Ok(OkReply { ok: true })
+}
+
+#[tauri::command(rename_all = "snake_case")]
 async fn delete_container(state: State<'_, AppState>, id: String) -> Result<OkReply, IpcError> {
     let IdArg { id } = IdArg { id };
     let docker = docker_from_state(&state).await?;
@@ -797,6 +846,10 @@ pub fn run() {
             list_containers,
             list_images,
             list_volumes,
+            list_compose_projects,
+            start_compose_project,
+            stop_compose_project,
+            down_compose_project,
             delete_container,
             delete_image,
             delete_volume,

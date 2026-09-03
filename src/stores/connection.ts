@@ -9,6 +9,7 @@ import {
   type EngineCandidate,
   type RefreshAll,
 } from "../lib/tauri";
+import { useCompose } from "./compose";
 import { useContainers } from "./containers";
 import { useImages } from "./images";
 import { useLogs } from "./logs";
@@ -25,6 +26,7 @@ type ConnectionState = {
 };
 
 function clearLists() {
+  useCompose.getState().clear();
   useContainers.getState().clear();
   useImages.getState().clear();
   useVolumes.getState().clear();
@@ -56,6 +58,7 @@ export const useConnection = create<ConnectionState>((set, get) => ({
         void useImages.getState().reload();
         void useVolumes.getState().reload();
       });
+      void useCompose.getState().reload();
     }
   },
   loadEngines: async () => {

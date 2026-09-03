@@ -45,7 +45,7 @@ pub async fn delete_image(docker: &dyn DockerPort, id: &str) -> Result<(), Dockb
 mod tests {
     use super::*;
     use crate::client::DockerPort;
-    use crate::types::{ContainerRow, EngineEvent, RawLogChunk, VolumeRow};
+    use crate::types::{ContainerRow, EngineEvent, NetworkRow, RawLogChunk, VolumeRow};
     use async_trait::async_trait;
     use futures::Stream;
     use std::pin::Pin;
@@ -61,6 +61,18 @@ mod tests {
             Ok(vec![])
         }
         async fn remove_container(&self, _id: &str, _force: bool) -> Result<(), DockboltError> {
+            Ok(())
+        }
+        async fn start_container(&self, _id: &str) -> Result<(), DockboltError> {
+            Ok(())
+        }
+        async fn stop_container(&self, _id: &str) -> Result<(), DockboltError> {
+            Ok(())
+        }
+        async fn list_networks(&self) -> Result<Vec<NetworkRow>, DockboltError> {
+            Ok(vec![])
+        }
+        async fn remove_network(&self, _id: &str) -> Result<(), DockboltError> {
             Ok(())
         }
         async fn list_images(&self) -> Result<Vec<ImageRow>, DockboltError> {
@@ -121,6 +133,8 @@ mod classify_tests {
             state: "exited".into(),
             running: false,
             created_unix: 0,
+            compose_project: None,
+            compose_service: None,
         }
     }
 

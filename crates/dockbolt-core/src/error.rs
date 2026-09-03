@@ -63,6 +63,11 @@ pub fn map_status_and_message(status: Option<u16>, message: &str) -> DockboltErr
     if lower.contains("timed out") || lower.contains("timeout") {
         return DockboltError::Timeout;
     }
+    if lower.contains("active endpoints") {
+        return DockboltError::InUse {
+            summary: message.to_string(),
+        };
+    }
     match status {
         Some(404) => DockboltError::NotFound(message.to_string()),
         Some(409) if lower.contains("in use") || lower.contains("being used") => {
@@ -100,6 +105,18 @@ mod map_status_tests {
     fn maps_in_use_being_used() {
         assert_eq!(
             map_status_and_message(Some(409), "volume is being used by a container").code(),
+            "in_use"
+        );
+    }
+
+    #[test]
+    fn maps_network_with_active_endpoints_to_in_use() {
+        assert_eq!(
+            map_status_and_message(
+                Some(403),
+                "error while removing network: network dockbolt_default has active endpoints"
+            )
+            .code(),
             "in_use"
         );
     }

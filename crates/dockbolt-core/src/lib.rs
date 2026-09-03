@@ -1,5 +1,6 @@
 pub mod bollard_client;
 pub mod client;
+pub mod compose;
 pub mod containers;
 pub mod engine;
 pub mod error;
@@ -152,6 +153,8 @@ mod container_tests {
             state: if running { "running" } else { "exited" }.into(),
             running,
             created_unix: 0,
+            compose_project: None,
+            compose_service: None,
         }
     }
 
@@ -309,25 +312,32 @@ mod event_tests {
     use std::task::Poll;
 
     use crate::events::{
-        classify_events_poll, resource_from_docker_type, EventsSubscribe, InvalidateDebouncer,
+        classify_events_poll, resources_from_docker_type, EventsSubscribe, InvalidateDebouncer,
     };
     use crate::ResourceKind;
 
     #[test]
     fn maps_docker_types() {
         assert_eq!(
-            resource_from_docker_type("container"),
-            Some(ResourceKind::Containers)
+            resources_from_docker_type("container"),
+            vec![ResourceKind::Containers, ResourceKind::Compose]
         );
         assert_eq!(
-            resource_from_docker_type("image"),
-            Some(ResourceKind::Images)
+            resources_from_docker_type("image"),
+            vec![ResourceKind::Images]
         );
         assert_eq!(
-            resource_from_docker_type("volume"),
-            Some(ResourceKind::Volumes)
+            resources_from_docker_type("volume"),
+            vec![ResourceKind::Volumes]
         );
-        assert_eq!(resource_from_docker_type("network"), None);
+        assert_eq!(
+            resources_from_docker_type("network"),
+            vec![ResourceKind::Compose]
+        );
+        assert_eq!(
+            resources_from_docker_type("plugin"),
+            Vec::<ResourceKind>::new()
+        );
     }
 
     #[test]

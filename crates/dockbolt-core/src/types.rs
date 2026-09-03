@@ -6,6 +6,7 @@ pub enum ResourceKind {
     Containers,
     Images,
     Volumes,
+    Compose,
 }
 
 impl ResourceKind {
@@ -14,6 +15,7 @@ impl ResourceKind {
             Self::Containers => "containers",
             Self::Images => "images",
             Self::Volumes => "volumes",
+            Self::Compose => "compose",
         }
     }
 }
@@ -28,6 +30,35 @@ pub struct ContainerRow {
     pub state: String,
     pub running: bool,
     pub created_unix: i64,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub compose_project: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub compose_service: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+pub struct NetworkRow {
+    pub id: String,
+    pub name: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub compose_project: Option<String>,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum ComposeProjectStatus {
+    Running,
+    Partial,
+    Stopped,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+pub struct ComposeProjectRow {
+    pub project: String,
+    pub status: ComposeProjectStatus,
+    pub service_count: u32,
+    pub running_count: u32,
+    pub container_count: u32,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
