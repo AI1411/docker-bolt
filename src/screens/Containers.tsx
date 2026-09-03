@@ -63,6 +63,14 @@ export function Containers() {
   }
 
   function body() {
+    if (view.status === "connecting") {
+      return (
+        <div className="empty">
+          <p>Looking for a Docker engine…</p>
+          <p>This list fills when an engine connects.</p>
+        </div>
+      );
+    }
     if (view.status === "disconnected") {
       return (
         <div className="empty">

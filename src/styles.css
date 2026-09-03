@@ -157,6 +157,13 @@ button.danger:not(:disabled):hover {
 
 .empty p {
   margin: 0;
+  max-width: 28rem;
+  text-align: center;
+}
+
+.empty p:first-child {
+  color: var(--fg);
+  font-weight: 600;
 }
 
 .vtable {

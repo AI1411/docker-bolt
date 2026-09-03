@@ -113,6 +113,14 @@ export function Images() {
   }
 
   function body() {
+    if (view.status === "connecting") {
+      return (
+        <div className="empty">
+          <p>Looking for a Docker engine…</p>
+          <p>Images show up here once an engine connects.</p>
+        </div>
+      );
+    }
     if (view.status === "disconnected") {
       return (
         <div className="empty">
