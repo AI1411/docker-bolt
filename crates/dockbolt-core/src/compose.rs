@@ -493,7 +493,7 @@ mod grouping_tests {
         let err = start_compose_project(&docker, "nope").await.unwrap_err();
 
         assert_eq!(err.code(), "not_found");
-        assert_eq!(err.message(), "nope");
+        assert!(matches!(err, DockboltError::NotFound(ref name) if name == "nope"));
         assert!(docker.start.lock().unwrap().is_empty());
     }
 }
