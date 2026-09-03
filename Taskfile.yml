@@ -17,3 +17,11 @@ tasks:
     aliases: [dev, run]
     cmds:
       - npm run tauri -- dev
+
+  ci:
+    desc: Run the same checks as GitHub Actions (frontend tests/build + cargo test)
+    deps: [install]
+    cmds:
+      - npm test
+      - npm run build
+      - cargo test --workspace --locked
