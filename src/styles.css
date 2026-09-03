@@ -147,7 +147,7 @@ button.danger:not(:disabled):hover {
 }
 
 .status-text.connecting {
-  color: var(--fg-muted);
+  color: #f0c14b;
 }
 
 .screen {
