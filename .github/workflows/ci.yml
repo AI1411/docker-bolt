@@ -24,6 +24,7 @@ jobs:
           cache: npm
 
       - run: npm ci
+      - run: npm run lint
       - run: npm test
       - run: npm run build
 
@@ -46,7 +47,11 @@ jobs:
             pkg-config
 
       - uses: dtolnay/rust-toolchain@1.88
+        with:
+          components: rustfmt, clippy
 
       - uses: Swatinem/rust-cache@v2
 
+      - run: cargo fmt --all -- --check
+      - run: cargo clippy --workspace --locked --all-targets -- -D warnings
       - run: cargo test --workspace --locked

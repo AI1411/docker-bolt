@@ -1,7 +1,7 @@
 import { afterEach, expect, test, vi } from "vitest";
 import { applyBatch } from "./logs";
 import type { LogLine } from "../lib/tauri";
-import { isPinnedToBottom } from "../components/VirtualTable";
+import { isPinnedToBottom } from "../lib/scroll";
 
 const startLogs = vi.fn<(container_id: string) => Promise<{ session_id: string }>>();
 const stopLogs = vi.fn<(session_id: string) => Promise<void>>(async () => undefined);

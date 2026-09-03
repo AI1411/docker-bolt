@@ -54,9 +54,7 @@ mod tests {
         ) -> Pin<Box<dyn Stream<Item = Result<RawLogChunk, DockboltError>> + Send>> {
             Box::pin(futures::stream::empty())
         }
-        fn events(
-            &self,
-        ) -> Pin<Box<dyn Stream<Item = Result<EngineEvent, DockboltError>> + Send>> {
+        fn events(&self) -> Pin<Box<dyn Stream<Item = Result<EngineEvent, DockboltError>> + Send>> {
             Box::pin(futures::stream::empty())
         }
     }
