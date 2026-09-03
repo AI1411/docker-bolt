@@ -128,10 +128,7 @@ fn home_dir_string() -> String {
 }
 
 fn engine_config_path(app: &AppHandle) -> Result<std::path::PathBuf, IpcError> {
-    let dir = app
-        .path()
-        .app_config_dir()
-        .map_err(|e| ipc_internal(e))?;
+    let dir = app.path().app_config_dir().map_err(ipc_internal)?;
     Ok(state::engine_json_path(dir))
 }
 
@@ -154,9 +151,9 @@ async fn probe_engines() -> Vec<EngineCandidate> {
 }
 
 fn disconnected_from_candidates(candidates: &[EngineCandidate]) -> ConnectionView {
-    let permission = candidates.iter().find(|c| {
-        c.unavailable_reason.as_deref() == Some(DockboltError::PermissionDenied.code())
-    });
+    let permission = candidates
+        .iter()
+        .find(|c| c.unavailable_reason.as_deref() == Some(DockboltError::PermissionDenied.code()));
     if permission.is_some() {
         ConnectionView::Disconnected {
             reason: DockboltError::PermissionDenied.code().to_string(),
@@ -177,7 +174,9 @@ fn disconnected_err(inner: &Inner) -> IpcError {
             message: message.clone(),
         },
         _ => IpcError {
-            code: DockboltError::EngineUnreachable("not connected".into()).code().to_string(),
+            code: DockboltError::EngineUnreachable("not connected".into())
+                .code()
+                .to_string(),
             message: "Not connected to a Docker engine".into(),
         },
     }
@@ -185,10 +184,7 @@ fn disconnected_err(inner: &Inner) -> IpcError {
 
 async fn docker_from_state(state: &AppState) -> Result<Arc<BollardDocker>, IpcError> {
     let inner = state.inner.lock().await;
-    inner
-        .docker
-        .clone()
-        .ok_or_else(|| disconnected_err(&inner))
+    inner.docker.clone().ok_or_else(|| disconnected_err(&inner))
 }
 
 fn abort_logs(inner: &mut Inner) {
@@ -220,10 +216,7 @@ fn poll_events_once(
     stream.as_mut().poll_next(&mut cx)
 }
 
-async fn wait_backoff(
-    abort: &mut tokio::sync::oneshot::Receiver<()>,
-    backoff_ms: u64,
-) -> bool {
+async fn wait_backoff(abort: &mut tokio::sync::oneshot::Receiver<()>, backoff_ms: u64) -> bool {
     tokio::select! {
         biased;
         _ = &mut *abort => true,
@@ -294,7 +287,11 @@ fn emit_invalidate(app: &AppHandle, resource: &str) {
     );
 }
 
-fn spawn_events(app: AppHandle, docker: Arc<BollardDocker>, abort: tokio::sync::oneshot::Receiver<()>) {
+fn spawn_events(
+    app: AppHandle,
+    docker: Arc<BollardDocker>,
+    abort: tokio::sync::oneshot::Receiver<()>,
+) {
     tauri::async_runtime::spawn(async move {
         run_event_loop(app, docker, abort).await;
     });
@@ -533,10 +530,7 @@ async fn list_engines() -> Result<Vec<EngineCandidate>, IpcError> {
 }
 
 #[tauri::command(rename_all = "snake_case")]
-async fn connect_engine(
-    app: AppHandle,
-    engine_id: String,
-) -> Result<ConnectionView, IpcError> {
+async fn connect_engine(app: AppHandle, engine_id: String) -> Result<ConnectionView, IpcError> {
     let ConnectArg { engine_id } = ConnectArg { engine_id };
     Ok(connect_to_engine(&app, &engine_id).await)
 }
@@ -562,10 +556,7 @@ async fn list_volumes(state: State<'_, AppState>) -> Result<Vec<VolumeRow>, IpcE
 }
 
 #[tauri::command(rename_all = "snake_case")]
-async fn delete_container(
-    state: State<'_, AppState>,
-    id: String,
-) -> Result<OkReply, IpcError> {
+async fn delete_container(state: State<'_, AppState>, id: String) -> Result<OkReply, IpcError> {
     let IdArg { id } = IdArg { id };
     let docker = docker_from_state(&state).await?;
     let rows = docker.list_containers().await?;
@@ -603,12 +594,11 @@ async fn refresh(
 ) -> Result<serde_json::Value, IpcError> {
     let RefreshArg { resource } = RefreshArg { resource };
     match resource.as_str() {
-        "containers" => serde_json::to_value(list_containers_inner(&state).await?)
-            .map_err(|e| ipc_internal(e)),
-        "images" => serde_json::to_value(list_images_inner(&state).await?).map_err(|e| ipc_internal(e)),
-        "volumes" => {
-            serde_json::to_value(list_volumes_inner(&state).await?).map_err(|e| ipc_internal(e))
+        "containers" => {
+            serde_json::to_value(list_containers_inner(&state).await?).map_err(ipc_internal)
         }
+        "images" => serde_json::to_value(list_images_inner(&state).await?).map_err(ipc_internal),
+        "volumes" => serde_json::to_value(list_volumes_inner(&state).await?).map_err(ipc_internal),
         "all" => {
             let containers = list_containers_inner(&state).await?;
             let images = list_images_inner(&state).await?;
@@ -618,7 +608,7 @@ async fn refresh(
                 "images": images,
                 "volumes": volumes,
             }))
-            .map_err(|e| ipc_internal(e))
+            .map_err(ipc_internal)
         }
         other => Err(ipc_internal(format!("unknown resource {other}"))),
     }
@@ -651,10 +641,7 @@ async fn start_logs(
 }
 
 #[tauri::command(rename_all = "snake_case")]
-async fn stop_logs(
-    state: State<'_, AppState>,
-    session_id: String,
-) -> Result<OkReply, IpcError> {
+async fn stop_logs(state: State<'_, AppState>, session_id: String) -> Result<OkReply, IpcError> {
     let StopLogsArg { session_id } = StopLogsArg { session_id };
     let mut inner = state.inner.lock().await;
     if inner.log_session_id.as_deref() == Some(session_id.as_str()) {
@@ -713,7 +700,9 @@ async fn run_log_session(
     session_id: String,
     mut abort: tokio::sync::oneshot::Receiver<()>,
 ) {
-    let queue = Arc::new(tokio::sync::Mutex::new(BatchQueue::new(LOG_CHANNEL_CAPACITY)));
+    let queue = Arc::new(tokio::sync::Mutex::new(BatchQueue::new(
+        LOG_CHANNEL_CAPACITY,
+    )));
     let omitted = Arc::new(std::sync::atomic::AtomicU64::new(0));
     let (kick_tx, mut kick_rx) = tokio::sync::mpsc::channel::<()>(1);
 

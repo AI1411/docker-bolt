@@ -65,9 +65,8 @@ pub fn save_engine_file(path: &Path, engine_id: &str) -> std::io::Result<()> {
     let file = EngineFile {
         selected_engine_id: engine_id.to_string(),
     };
-    let raw = serde_json::to_string(&file).map_err(|e| {
-        std::io::Error::new(std::io::ErrorKind::InvalidData, e)
-    })?;
+    let raw = serde_json::to_string(&file)
+        .map_err(|e| std::io::Error::new(std::io::ErrorKind::InvalidData, e))?;
     std::fs::write(path, raw)
 }
 

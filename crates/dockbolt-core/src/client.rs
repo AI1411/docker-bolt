@@ -4,9 +4,7 @@ use async_trait::async_trait;
 use futures::Stream;
 
 use crate::error::DockboltError;
-use crate::types::{
-    ContainerRow, EngineEvent, ImageRow, RawLogChunk, VolumeRow,
-};
+use crate::types::{ContainerRow, EngineEvent, ImageRow, RawLogChunk, VolumeRow};
 
 #[async_trait]
 pub trait DockerPort: Send + Sync {
@@ -73,9 +71,7 @@ mod ping_tests {
         ) -> Pin<Box<dyn Stream<Item = Result<RawLogChunk, DockboltError>> + Send>> {
             Box::pin(futures::stream::empty())
         }
-        fn events(
-            &self,
-        ) -> Pin<Box<dyn Stream<Item = Result<EngineEvent, DockboltError>> + Send>> {
+        fn events(&self) -> Pin<Box<dyn Stream<Item = Result<EngineEvent, DockboltError>> + Send>> {
             Box::pin(futures::stream::empty())
         }
     }

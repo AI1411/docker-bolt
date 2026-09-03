@@ -12,9 +12,7 @@ use crate::containers::normalize_container_name;
 use crate::error::{map_status_and_message, DockboltError};
 use crate::events::resource_from_docker_type;
 use crate::logs::{parse_docker_log_text, LOG_TAIL};
-use crate::types::{
-    ContainerRow, EngineEvent, ImageRow, LogStream, RawLogChunk, VolumeRow,
-};
+use crate::types::{ContainerRow, EngineEvent, ImageRow, LogStream, RawLogChunk, VolumeRow};
 
 pub struct BollardDocker {
     docker: Docker,
@@ -41,9 +39,7 @@ pub fn map_bollard_error(err: bollard::errors::Error) -> DockboltError {
     }
     let msg = err.to_string();
     let status = match &err {
-        bollard::errors::Error::DockerResponseServerError { status_code, .. } => {
-            Some(*status_code)
-        }
+        bollard::errors::Error::DockerResponseServerError { status_code, .. } => Some(*status_code),
         _ => status_from_message(&msg),
     };
     map_status_and_message(status, &msg)
@@ -159,7 +155,6 @@ impl DockerPort for BollardDocker {
                 Some(RemoveImageOptions {
                     force: false,
                     noprune: false,
-                    ..Default::default()
                 }),
                 None,
             )
@@ -225,9 +220,7 @@ impl DockerPort for BollardDocker {
         })
     }
 
-    fn events(
-        &self,
-    ) -> Pin<Box<dyn Stream<Item = Result<EngineEvent, DockboltError>> + Send>> {
+    fn events(&self) -> Pin<Box<dyn Stream<Item = Result<EngineEvent, DockboltError>> + Send>> {
         let docker = self.docker.clone();
         Box::pin(async_stream::stream! {
             let mut s = docker.events(None::<bollard::system::EventsOptions<String>>);

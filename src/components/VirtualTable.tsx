@@ -1,16 +1,6 @@
 import { useLayoutEffect, useRef, type ReactNode, type UIEvent } from "react";
 import { useVirtualizer } from "@tanstack/react-virtual";
-
-const BOTTOM_THRESHOLD_PX = 48;
-
-export function isPinnedToBottom(
-  scrollTop: number,
-  scrollHeight: number,
-  clientHeight: number,
-  threshold = BOTTOM_THRESHOLD_PX,
-): boolean {
-  return scrollHeight - scrollTop - clientHeight <= threshold;
-}
+import { isPinnedToBottom } from "../lib/scroll";
 
 export function VirtualTable({
   count,
@@ -27,6 +17,8 @@ export function VirtualTable({
 }) {
   const parentRef = useRef<HTMLDivElement>(null);
   const pinToBottom = useRef(true);
+  // TanStack Virtual returns unmemoizable functions; React Compiler skips this hook.
+  // eslint-disable-next-line react-hooks/incompatible-library
   const virtualizer = useVirtualizer({
     count,
     getScrollElement: () => parentRef.current,

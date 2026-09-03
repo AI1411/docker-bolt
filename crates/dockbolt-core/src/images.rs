@@ -85,9 +85,7 @@ mod tests {
         ) -> Pin<Box<dyn Stream<Item = Result<RawLogChunk, DockboltError>> + Send>> {
             Box::pin(futures::stream::empty())
         }
-        fn events(
-            &self,
-        ) -> Pin<Box<dyn Stream<Item = Result<EngineEvent, DockboltError>> + Send>> {
+        fn events(&self) -> Pin<Box<dyn Stream<Item = Result<EngineEvent, DockboltError>> + Send>> {
             Box::pin(futures::stream::empty())
         }
     }
@@ -147,7 +145,10 @@ mod classify_tests {
     #[test]
     fn matches_short_and_prefixed_ids() {
         let mut rows = vec![image("sha256:abcdef0123456789", &[])];
-        classify_images(&mut rows, &[container("sha256:abcdef0123456789", "abcdef012345")]);
+        classify_images(
+            &mut rows,
+            &[container("sha256:abcdef0123456789", "abcdef012345")],
+        );
         assert!(rows[0].in_use);
     }
 }
