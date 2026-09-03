@@ -19,9 +19,12 @@ tasks:
       - npm run tauri -- dev
 
   ci:
-    desc: Run the same checks as GitHub Actions (frontend tests/build + cargo test)
+    desc: Run the same checks as GitHub Actions (lint, tests, build)
     deps: [install]
     cmds:
+      - npm run lint
       - npm test
       - npm run build
+      - cargo fmt --all -- --check
+      - cargo clippy --workspace --locked --all-targets -- -D warnings
       - cargo test --workspace --locked

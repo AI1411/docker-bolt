@@ -4,15 +4,17 @@ use async_trait::async_trait;
 use futures::Stream;
 
 use crate::error::DockboltError;
-use crate::types::{
-    ContainerRow, EngineEvent, ImageRow, RawLogChunk, VolumeRow,
-};
+use crate::types::{ContainerRow, EngineEvent, ImageRow, NetworkRow, RawLogChunk, VolumeRow};
 
 #[async_trait]
 pub trait DockerPort: Send + Sync {
     async fn version(&self) -> Result<String, DockboltError>;
     async fn list_containers(&self) -> Result<Vec<ContainerRow>, DockboltError>;
     async fn remove_container(&self, id: &str, force: bool) -> Result<(), DockboltError>;
+    async fn start_container(&self, id: &str) -> Result<(), DockboltError>;
+    async fn stop_container(&self, id: &str) -> Result<(), DockboltError>;
+    async fn list_networks(&self) -> Result<Vec<NetworkRow>, DockboltError>;
+    async fn remove_network(&self, id: &str) -> Result<(), DockboltError>;
     async fn list_images(&self) -> Result<Vec<ImageRow>, DockboltError>;
     async fn remove_image(&self, id: &str) -> Result<(), DockboltError>;
     async fn list_volumes(&self) -> Result<Vec<VolumeRow>, DockboltError>;
@@ -35,7 +37,7 @@ pub async fn ping(docker: &dyn DockerPort) -> Result<String, DockboltError> {
 #[cfg(test)]
 mod ping_tests {
     use super::*;
-    use crate::types::{ContainerRow, EngineEvent, ImageRow, RawLogChunk, VolumeRow};
+    use crate::types::{ContainerRow, EngineEvent, ImageRow, NetworkRow, RawLogChunk, VolumeRow};
     use async_trait::async_trait;
     use futures::Stream;
     use std::pin::Pin;
@@ -53,6 +55,18 @@ mod ping_tests {
             Ok(vec![])
         }
         async fn remove_container(&self, _id: &str, _force: bool) -> Result<(), DockboltError> {
+            Ok(())
+        }
+        async fn start_container(&self, _id: &str) -> Result<(), DockboltError> {
+            Ok(())
+        }
+        async fn stop_container(&self, _id: &str) -> Result<(), DockboltError> {
+            Ok(())
+        }
+        async fn list_networks(&self) -> Result<Vec<NetworkRow>, DockboltError> {
+            Ok(vec![])
+        }
+        async fn remove_network(&self, _id: &str) -> Result<(), DockboltError> {
             Ok(())
         }
         async fn list_images(&self) -> Result<Vec<ImageRow>, DockboltError> {
@@ -73,9 +87,7 @@ mod ping_tests {
         ) -> Pin<Box<dyn Stream<Item = Result<RawLogChunk, DockboltError>> + Send>> {
             Box::pin(futures::stream::empty())
         }
-        fn events(
-            &self,
-        ) -> Pin<Box<dyn Stream<Item = Result<EngineEvent, DockboltError>> + Send>> {
+        fn events(&self) -> Pin<Box<dyn Stream<Item = Result<EngineEvent, DockboltError>> + Send>> {
             Box::pin(futures::stream::empty())
         }
     }
@@ -84,5 +96,14 @@ mod ping_tests {
     async fn ping_times_out_when_version_is_slow() {
         let err = ping(&SleepyVersion).await.unwrap_err();
         assert_eq!(err.code(), "timeout");
+    }
+
+    #[tokio::test]
+    async fn start_stop_network_defaults_succeed_on_sleepy_version() {
+        let d = SleepyVersion;
+        d.start_container("x").await.unwrap();
+        d.stop_container("x").await.unwrap();
+        assert!(d.list_networks().await.unwrap().is_empty());
+        d.remove_network("n").await.unwrap();
     }
 }

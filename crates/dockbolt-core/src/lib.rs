@@ -1,13 +1,14 @@
 pub mod bollard_client;
 pub mod client;
+pub mod compose;
 pub mod containers;
-pub mod events;
-pub mod images;
-pub mod volumes;
 pub mod engine;
 pub mod error;
+pub mod events;
+pub mod images;
 pub mod logs;
 pub mod types;
+pub mod volumes;
 
 pub use client::DockerPort;
 pub use engine::*;
@@ -152,6 +153,8 @@ mod container_tests {
             state: if running { "running" } else { "exited" }.into(),
             running,
             created_unix: 0,
+            compose_project: None,
+            compose_service: None,
         }
     }
 
@@ -161,7 +164,10 @@ mod container_tests {
             normalize_container_name(&["/api".into()], "abcdefghijklmnop"),
             "api"
         );
-        assert_eq!(normalize_container_name(&[], "abcdefghijklmnop"), "abcdefghijkl");
+        assert_eq!(
+            normalize_container_name(&[], "abcdefghijklmnop"),
+            "abcdefghijkl"
+        );
     }
 
     #[test]
@@ -229,12 +235,12 @@ mod image_volume_tests {
 
 #[cfg(test)]
 mod log_unit_tests {
-    use std::time::Duration;
     use crate::logs::{
         parse_docker_log_text, push_ring, should_flush, BatchQueue, LogSeq, LOG_BATCH_LINES,
         LOG_RING_MAX,
     };
     use crate::LogStream;
+    use std::time::Duration;
 
     #[test]
     fn splits_rfc3339_prefix() {
@@ -306,19 +312,32 @@ mod event_tests {
     use std::task::Poll;
 
     use crate::events::{
-        classify_events_poll, resource_from_docker_type, EventsSubscribe, InvalidateDebouncer,
+        classify_events_poll, resources_from_docker_type, EventsSubscribe, InvalidateDebouncer,
     };
     use crate::ResourceKind;
 
     #[test]
     fn maps_docker_types() {
         assert_eq!(
-            resource_from_docker_type("container"),
-            Some(ResourceKind::Containers)
+            resources_from_docker_type("container"),
+            vec![ResourceKind::Containers, ResourceKind::Compose]
         );
-        assert_eq!(resource_from_docker_type("image"), Some(ResourceKind::Images));
-        assert_eq!(resource_from_docker_type("volume"), Some(ResourceKind::Volumes));
-        assert_eq!(resource_from_docker_type("network"), None);
+        assert_eq!(
+            resources_from_docker_type("image"),
+            vec![ResourceKind::Images]
+        );
+        assert_eq!(
+            resources_from_docker_type("volume"),
+            vec![ResourceKind::Volumes]
+        );
+        assert_eq!(
+            resources_from_docker_type("network"),
+            vec![ResourceKind::Compose]
+        );
+        assert_eq!(
+            resources_from_docker_type("plugin"),
+            Vec::<ResourceKind>::new()
+        );
     }
 
     #[test]
@@ -367,9 +386,6 @@ mod event_tests {
         d.note(ResourceKind::Images, 0);
         let mut ready = d.take_ready(100);
         ready.sort_by_key(|k| k.as_str());
-        assert_eq!(
-            ready,
-            vec![ResourceKind::Containers, ResourceKind::Images]
-        );
+        assert_eq!(ready, vec![ResourceKind::Containers, ResourceKind::Images]);
     }
 }

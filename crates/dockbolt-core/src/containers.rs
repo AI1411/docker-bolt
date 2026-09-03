@@ -33,7 +33,7 @@ pub async fn delete_container(
 mod delete_tests {
     use super::*;
     use crate::client::DockerPort;
-    use crate::types::{EngineEvent, ImageRow, RawLogChunk, VolumeRow};
+    use crate::types::{EngineEvent, ImageRow, NetworkRow, RawLogChunk, VolumeRow};
     use async_trait::async_trait;
     use futures::Stream;
     use std::pin::Pin;
@@ -55,6 +55,18 @@ mod delete_tests {
             *self.last_force.lock().unwrap() = Some(force);
             Ok(())
         }
+        async fn start_container(&self, _id: &str) -> Result<(), DockboltError> {
+            Ok(())
+        }
+        async fn stop_container(&self, _id: &str) -> Result<(), DockboltError> {
+            Ok(())
+        }
+        async fn list_networks(&self) -> Result<Vec<NetworkRow>, DockboltError> {
+            Ok(vec![])
+        }
+        async fn remove_network(&self, _id: &str) -> Result<(), DockboltError> {
+            Ok(())
+        }
         async fn list_images(&self) -> Result<Vec<ImageRow>, DockboltError> {
             Ok(vec![])
         }
@@ -73,9 +85,7 @@ mod delete_tests {
         ) -> Pin<Box<dyn Stream<Item = Result<RawLogChunk, DockboltError>> + Send>> {
             Box::pin(futures::stream::empty())
         }
-        fn events(
-            &self,
-        ) -> Pin<Box<dyn Stream<Item = Result<EngineEvent, DockboltError>> + Send>> {
+        fn events(&self) -> Pin<Box<dyn Stream<Item = Result<EngineEvent, DockboltError>> + Send>> {
             Box::pin(futures::stream::empty())
         }
     }
@@ -94,6 +104,8 @@ mod delete_tests {
             state: "running".into(),
             running: true,
             created_unix: 1,
+            compose_project: None,
+            compose_service: None,
         };
         delete_container(&docker, &row).await.unwrap();
         assert_eq!(*last.lock().unwrap(), Some(true));
@@ -113,6 +125,8 @@ mod delete_tests {
             state: "exited".into(),
             running: false,
             created_unix: 1,
+            compose_project: None,
+            compose_service: None,
         };
         delete_container(&docker, &row).await.unwrap();
         assert_eq!(*last.lock().unwrap(), Some(false));

@@ -231,6 +231,10 @@ button.danger:not(:disabled):hover {
   grid-template-columns: minmax(90px, 1.4fr) minmax(90px, 1.4fr) 88px 108px 132px;
 }
 
+.row[data-cols="compose"] {
+  grid-template-columns: minmax(90px, 1.6fr) 88px 88px 88px;
+}
+
 .row[data-cols="images"] {
   grid-template-columns: 22px minmax(120px, 2fr) 108px 88px 132px 28px;
 }

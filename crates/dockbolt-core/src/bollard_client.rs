@@ -10,10 +10,10 @@ use futures::{Stream, StreamExt};
 use crate::client::DockerPort;
 use crate::containers::normalize_container_name;
 use crate::error::{map_status_and_message, DockboltError};
-use crate::events::resource_from_docker_type;
+use crate::events::resources_from_docker_type;
 use crate::logs::{parse_docker_log_text, LOG_TAIL};
 use crate::types::{
-    ContainerRow, EngineEvent, ImageRow, LogStream, RawLogChunk, VolumeRow,
+    ContainerRow, EngineEvent, ImageRow, LogStream, NetworkRow, RawLogChunk, VolumeRow,
 };
 
 pub struct BollardDocker {
@@ -41,9 +41,7 @@ pub fn map_bollard_error(err: bollard::errors::Error) -> DockboltError {
     }
     let msg = err.to_string();
     let status = match &err {
-        bollard::errors::Error::DockerResponseServerError { status_code, .. } => {
-            Some(*status_code)
-        }
+        bollard::errors::Error::DockerResponseServerError { status_code, .. } => Some(*status_code),
         _ => status_from_message(&msg),
     };
     map_status_and_message(status, &msg)
@@ -105,6 +103,15 @@ impl DockerPort for BollardDocker {
                 let id = c.id.clone().unwrap_or_default();
                 let names = c.names.unwrap_or_default();
                 let state = c.state.clone().unwrap_or_default();
+                let labels = c.labels.unwrap_or_default();
+                let compose_project = labels
+                    .get("com.docker.compose.project")
+                    .cloned()
+                    .filter(|s| !s.is_empty());
+                let compose_service = labels
+                    .get("com.docker.compose.service")
+                    .cloned()
+                    .filter(|s| !s.is_empty());
                 ContainerRow {
                     name: normalize_container_name(&names, &id),
                     image: c.image.unwrap_or_default(),
@@ -113,6 +120,8 @@ impl DockerPort for BollardDocker {
                     state,
                     created_unix: c.created.unwrap_or(0),
                     id,
+                    compose_project,
+                    compose_service,
                 }
             })
             .collect())
@@ -127,6 +136,49 @@ impl DockerPort for BollardDocker {
                     ..Default::default()
                 }),
             )
+            .await
+            .map_err(map_bollard_error)
+    }
+
+    async fn start_container(&self, id: &str) -> Result<(), DockboltError> {
+        self.docker
+            .start_container::<String>(id, None)
+            .await
+            .map_err(map_bollard_error)
+    }
+
+    async fn stop_container(&self, id: &str) -> Result<(), DockboltError> {
+        self.docker
+            .stop_container(id, None)
+            .await
+            .map_err(map_bollard_error)
+    }
+
+    async fn list_networks(&self) -> Result<Vec<NetworkRow>, DockboltError> {
+        let list = self
+            .docker
+            .list_networks::<String>(None)
+            .await
+            .map_err(map_bollard_error)?;
+        Ok(list
+            .into_iter()
+            .map(|n| {
+                let labels = n.labels.unwrap_or_default();
+                NetworkRow {
+                    id: n.id.unwrap_or_default(),
+                    name: n.name.unwrap_or_default(),
+                    compose_project: labels
+                        .get("com.docker.compose.project")
+                        .cloned()
+                        .filter(|s| !s.is_empty()),
+                }
+            })
+            .collect())
+    }
+
+    async fn remove_network(&self, id: &str) -> Result<(), DockboltError> {
+        self.docker
+            .remove_network(id)
             .await
             .map_err(map_bollard_error)
     }
@@ -159,7 +211,6 @@ impl DockerPort for BollardDocker {
                 Some(RemoveImageOptions {
                     force: false,
                     noprune: false,
-                    ..Default::default()
                 }),
                 None,
             )
@@ -225,9 +276,7 @@ impl DockerPort for BollardDocker {
         })
     }
 
-    fn events(
-        &self,
-    ) -> Pin<Box<dyn Stream<Item = Result<EngineEvent, DockboltError>> + Send>> {
+    fn events(&self) -> Pin<Box<dyn Stream<Item = Result<EngineEvent, DockboltError>> + Send>> {
         let docker = self.docker.clone();
         Box::pin(async_stream::stream! {
             let mut s = docker.events(None::<bollard::system::EventsOptions<String>>);
@@ -235,8 +284,8 @@ impl DockerPort for BollardDocker {
                 match item {
                     Ok(ev) => {
                         if let Some(ty) = docker_event_type(&ev) {
-                            if let Some(resource) = resource_from_docker_type(&ty) {
-                                yield Ok(EngineEvent { resource });
+                            for kind in resources_from_docker_type(&ty) {
+                                yield Ok(EngineEvent { resource: kind });
                             }
                         }
                     }

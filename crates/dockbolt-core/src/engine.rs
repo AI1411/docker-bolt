@@ -71,15 +71,9 @@ pub fn candidate_from_probe(
     }
 }
 
-pub fn select_engine_id(
-    saved: Option<&str>,
-    candidates: &[EngineCandidate],
-) -> Option<String> {
+pub fn select_engine_id(saved: Option<&str>, candidates: &[EngineCandidate]) -> Option<String> {
     if let Some(id) = saved {
-        if candidates
-            .iter()
-            .any(|c| c.engine_id == id && c.available)
-        {
+        if candidates.iter().any(|c| c.engine_id == id && c.available) {
             return Some(id.to_string());
         }
     }
