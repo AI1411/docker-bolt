@@ -1,9 +1,11 @@
 import { useMemo, useRef, useState } from "react";
 import { ConfirmDialog } from "../components/ConfirmDialog";
+import { ListSearch } from "../components/ListSearch";
 import { ResourceTile } from "../components/icons";
 import { buttonClass } from "../lib/buttonClass";
 import { VirtualTable } from "../components/VirtualTable";
 import { fmtBytes, fmtTime, shortId } from "../lib/format";
+import { filterByQuery, noMatchCopy } from "../lib/listFilter";
 import { resourceIconKind } from "../lib/resourceIcon";
 import {
   buildImageTableItems,
@@ -47,10 +49,15 @@ export function Images() {
   const [dialog, setDialog] = useState<Dialog | null>(null);
   const [busy, setBusy] = useState(false);
   const anchorId = useRef<string | null>(null);
-  const items = useMemo(() => buildImageTableItems(rows), [rows]);
-  const unusedIds = useMemo(() => unusedImageIds(rows), [rows]);
+  const [query, setQuery] = useState("");
+  const visibleRows = useMemo(
+    () => filterByQuery(rows, query, (row) => [...row.tags, row.id]),
+    [rows, query],
+  );
+  const items = useMemo(() => buildImageTableItems(visibleRows), [visibleRows]);
+  const unusedIds = useMemo(() => unusedImageIds(visibleRows), [visibleRows]);
   const selectedUnused = selectedIds.filter((id) => unusedIds.includes(id));
-  const selectedInUse = rows.find(
+  const selectedInUse = visibleRows.find(
     (row) => row.in_use && selectedIds.length === 1 && selectedIds[0] === row.id,
   );
   const allUnusedSelected = unusedIds.length > 0 && unusedIds.every((id) => selectedIds.includes(id));
@@ -139,6 +146,10 @@ export function Images() {
     }
     if (!loading && connected && rows.length === 0) {
       return <div className="empty">No images</div>;
+    }
+    const miss = noMatchCopy("images", query, rows.length, visibleRows.length);
+    if (miss) {
+      return <div className="empty">{miss}</div>;
     }
     return (
       <VirtualTable
@@ -247,6 +258,7 @@ export function Images() {
     <div className="screen">
       <div className="toolbar">
         <span className="toolbar-title">Images</span>
+        <ListSearch value={query} onChange={setQuery} label="Filter images" />
         <button
           type="button"
           className={buttonClass("ghost")}

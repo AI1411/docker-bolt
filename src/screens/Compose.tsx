@@ -1,8 +1,10 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { ConfirmDialog } from "../components/ConfirmDialog";
+import { ListSearch } from "../components/ListSearch";
 import { ResourceTile } from "../components/icons";
 import { StatusPill } from "../components/StatusPill";
 import { buttonClass } from "../lib/buttonClass";
+import { filterByQuery, noMatchCopy } from "../lib/listFilter";
 import { resourceStatusPill } from "../lib/statusPill";
 import { VirtualTable } from "../components/VirtualTable";
 import { api, ipcErrorMessage } from "../lib/tauri";
@@ -22,7 +24,12 @@ export function Compose() {
   const selectedProject = useCompose((s) => s.selectedProject);
   const select = useCompose((s) => s.select);
   const reload = useCompose((s) => s.reload);
-  const selected = rows.find((row) => row.project === selectedProject) ?? null;
+  const [query, setQuery] = useState("");
+  const visible = useMemo(
+    () => filterByQuery(rows, query, (row) => [row.project, row.status]),
+    [rows, query],
+  );
+  const selected = visible.find((row) => row.project === selectedProject) ?? null;
   const connected = view.status === "connected";
   const [dialog, setDialog] = useState<Dialog | null>(null);
   const [busy, setBusy] = useState(false);
@@ -65,12 +72,16 @@ export function Compose() {
     if (!loading && connected && rows.length === 0) {
       return <div className="empty">No compose projects</div>;
     }
+    const miss = noMatchCopy("compose projects", query, rows.length, visible.length);
+    if (miss) {
+      return <div className="empty">{miss}</div>;
+    }
     return (
       <VirtualTable
-        count={rows.length}
+        count={visible.length}
         rowHeight={56}
         rowRenderer={(index) => {
-          const row = rows[index];
+          const row = visible[index];
           return (
             <div
               className={`row list-row ${row.project === selectedProject ? "selected" : ""}`}
@@ -102,6 +113,7 @@ export function Compose() {
     <div className="screen">
       <div className="toolbar">
         <span className="toolbar-title">Compose</span>
+        <ListSearch value={query} onChange={setQuery} label="Filter compose projects" />
         <button
           type="button"
           className={buttonClass("ghost")}

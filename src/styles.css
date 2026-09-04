@@ -346,6 +346,10 @@ button.primary:not(:disabled):hover {
   font-size: 21px;
   line-height: 26px;
   letter-spacing: 0.231px;
+}
+
+.list-search {
+  flex: 1;
   margin-right: auto;
 }
 
