@@ -1,11 +1,13 @@
-import { useMemo, useRef, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import { ConfirmDialog } from "../components/ConfirmDialog";
 import { ListSearch } from "../components/ListSearch";
 import { ResourceTile } from "../components/icons";
 import { buttonClass } from "../lib/buttonClass";
-import { VirtualTable } from "../components/VirtualTable";
+import { VirtualTable, type VirtualTableHandle } from "../components/VirtualTable";
 import { fmtBytes, fmtTime, shortId } from "../lib/format";
 import { filterByQuery, noMatchCopy } from "../lib/listFilter";
+import { listRowA11y } from "../lib/listKeys";
+import { useListKeyboard } from "../lib/useListKeyboard";
 import { resourceIconKind } from "../lib/resourceIcon";
 import {
   buildImageTableItems,
@@ -50,6 +52,8 @@ export function Images() {
   const [busy, setBusy] = useState(false);
   const anchorId = useRef<string | null>(null);
   const [query, setQuery] = useState("");
+  const searchRef = useRef<HTMLInputElement>(null);
+  const tableRef = useRef<VirtualTableHandle>(null);
   const visibleRows = useMemo(
     () => filterByQuery(rows, query, (row) => [...row.tags, row.id]),
     [rows, query],
@@ -63,6 +67,34 @@ export function Images() {
   const allUnusedSelected = unusedIds.length > 0 && unusedIds.every((id) => selectedIds.includes(id));
   const someUnusedSelected = selectedUnused.length > 0 && !allUnusedSelected;
   const deleteTargets = selectedUnused.length > 0 ? selectedUnused : selectedInUse ? [selectedInUse.id] : [];
+  const selectedId = selectedIds.length > 0 ? selectedIds[selectedIds.length - 1] : null;
+  const indexForId = useCallback(
+    (id: string) => items.findIndex((item) => item.kind === "image" && item.row.id === id),
+    [items],
+  );
+
+  useListKeyboard({
+    ids: visibleRows.map((row) => row.id),
+    selectedId,
+    onSelect: select,
+    searchRef,
+    tableRef,
+    dialogOpen: Boolean(dialog),
+    onDelete: () => {
+      const ids = (() => {
+        const state = useImages.getState();
+        const unused = unusedImageIds(visibleRows);
+        const unusedSelected = state.selectedIds.filter((id) => unused.includes(id));
+        if (unusedSelected.length > 0) return unusedSelected;
+        const inUse = visibleRows.find(
+          (row) => row.in_use && state.selectedIds.length === 1 && state.selectedIds[0] === row.id,
+        );
+        return inUse ? [inUse.id] : [];
+      })();
+      void deleteImages(ids);
+    },
+    indexForId,
+  });
 
   async function deleteImages(ids: string[]) {
     if (busy || ids.length === 0) return;
@@ -153,6 +185,7 @@ export function Images() {
     }
     return (
       <VirtualTable
+        ref={tableRef}
         count={items.length}
         rowHeight={56}
         header={
@@ -199,6 +232,7 @@ export function Images() {
             <div
               className={`row ${selected ? "selected" : ""}`}
               data-cols="images"
+              {...listRowA11y(selected)}
               onClick={(event) => {
                 if (row.in_use) {
                   select(row.id);
@@ -258,7 +292,7 @@ export function Images() {
     <div className="screen">
       <div className="toolbar">
         <span className="toolbar-title">Images</span>
-        <ListSearch value={query} onChange={setQuery} label="Filter images" />
+        <ListSearch ref={searchRef} value={query} onChange={setQuery} label="Filter images" />
         <button
           type="button"
           className={buttonClass("ghost")}
