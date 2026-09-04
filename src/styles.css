@@ -416,7 +416,6 @@ button.primary:not(:disabled):hover {
   align-items: center;
   height: 40px;
   padding: 0 16px;
-  border-bottom: 1px solid var(--border);
   cursor: default;
 }
 
@@ -442,6 +441,7 @@ button.primary:not(:disabled):hover {
   font-weight: 600;
   background: var(--bg-section);
   cursor: default;
+  border-bottom: 1px solid var(--border);
 }
 
 .row.section:hover {
@@ -594,6 +594,11 @@ button.primary:not(:disabled):hover {
 .mono {
   font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
   letter-spacing: normal;
+  font-variant-numeric: tabular-nums;
+}
+
+.cell.muted {
+  font-variant-numeric: tabular-nums;
 }
 
 .modal-backdrop {
