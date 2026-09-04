@@ -1,5 +1,5 @@
 export function containersNavActive(pathname: string): boolean {
-  if (pathname === "/") return true;
+  if (pathname === "/" || pathname === "/compose") return true;
   return /^\/containers\/[^/]+\/logs\/?$/.test(pathname);
 }
 

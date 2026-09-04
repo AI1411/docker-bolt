@@ -1,7 +1,9 @@
 import { expect, test } from "vitest";
 import {
   canRestartContainer,
+  canStartComposeProject,
   canStartContainer,
+  canStopComposeProject,
   canStopContainer,
 } from "./lib/containerLifecycle";
 import type { ContainerRow } from "./lib/tauri";
@@ -33,4 +35,18 @@ test("restart when any container is selected", () => {
   expect(canRestartContainer(running, true, false)).toBe(true);
   expect(canRestartContainer(stopped, true, false)).toBe(true);
   expect(canRestartContainer(null, true, false)).toBe(false);
+});
+
+test("compose start is allowed unless every container is already running", () => {
+  expect(canStartComposeProject("stopped", true, false)).toBe(true);
+  expect(canStartComposeProject("partial", true, false)).toBe(true);
+  expect(canStartComposeProject("running", true, false)).toBe(false);
+  expect(canStartComposeProject("stopped", false, false)).toBe(false);
+  expect(canStartComposeProject("stopped", true, true)).toBe(false);
+});
+
+test("compose stop is allowed when any container is running", () => {
+  expect(canStopComposeProject("running", true, false)).toBe(true);
+  expect(canStopComposeProject("partial", true, false)).toBe(true);
+  expect(canStopComposeProject("stopped", true, false)).toBe(false);
 });
