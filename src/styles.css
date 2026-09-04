@@ -1,11 +1,10 @@
 /* Apple Japan tokens from DESIGN.md — App UI chrome, not a marketing hero. */
 :root {
-  --font-text: "SF Pro JP", "SF Pro Text", "SF Pro Icons", "Hiragino Kaku Gothic Pro",
-    "ヒラギノ角ゴ Pro W3", メイリオ, Meiryo, "ＭＳ Ｐゴシック", "Helvetica Neue", Helvetica, Arial,
-    sans-serif;
-  --font-display: "SF Pro JP", "SF Pro Display", "SF Pro Icons", "Hiragino Kaku Gothic Pro",
-    "ヒラギノ角ゴ Pro W3", メイリオ, Meiryo, "ＭＳ Ｐゴシック", "Helvetica Neue", Helvetica, Arial,
-    sans-serif;
+  --font-text: "IBM Plex Sans", "SF Pro JP", "SF Pro Text", "Hiragino Kaku Gothic Pro",
+    "Helvetica Neue", Helvetica, Arial, sans-serif;
+  --font-display: "IBM Plex Sans", "SF Pro JP", "SF Pro Display", "Hiragino Kaku Gothic Pro",
+    "Helvetica Neue", Helvetica, Arial, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
   --bg: #000;
   --bg-sidebar: rgba(0, 0, 0, 0.8);
   --bg-toolbar: #1d1d1f;
@@ -44,7 +43,7 @@ html {
   font-size: 14px;
   font-weight: 400;
   line-height: 1.47;
-  letter-spacing: -0.357px;
+  letter-spacing: normal;
   font-feature-settings: normal;
   color-scheme: dark;
 }
@@ -592,7 +591,7 @@ button.primary:not(:disabled):hover {
 }
 
 .mono {
-  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-family: var(--font-mono);
   letter-spacing: normal;
   font-variant-numeric: tabular-nums;
 }

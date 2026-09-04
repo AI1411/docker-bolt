@@ -4,6 +4,10 @@
 > Puppeteer による computed style 実測値（2026-04-06 取得）に基づく。
 > 本家 awesome-design-md の apple DESIGN.md との差分に焦点を当てる。
 
+## App fonts (DockBolt)
+
+SF Pro JP cannot be bundled. The app ships **IBM Plex Sans** (UI) and **IBM Plex Mono** (IDs / logs) via `@fontsource`. Letter-spacing on `html` is `normal` so Plex is not squeezed by Apple.com’s `-0.357px` tracking. System SF Pro names remain as optional fallbacks after Plex.
+
 ---
 
 ## 1. Visual Theme & Atmosphere
