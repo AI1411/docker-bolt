@@ -1,6 +1,7 @@
+import { StatusPill } from "./StatusPill";
 import { buttonClass } from "../lib/buttonClass";
-import { connectionStatusClass } from "../lib/chromeTone";
 import { nextEngineId } from "../lib/engineSelect";
+import { connectionPill } from "../lib/statusPill";
 import { useConnection } from "../stores/connection";
 
 export function StatusBar() {
@@ -8,23 +9,18 @@ export function StatusBar() {
   const engines = useConnection((s) => s.engines);
   const connect = useConnection((s) => s.connect);
   const retry = useConnection((s) => s.retry);
+  const pill = connectionPill(view.status);
 
   const selected =
     view.status === "connected"
       ? view.engine_id
       : nextEngineId(undefined, engines) ?? "";
 
-  let statusText = "Connecting";
-  if (view.status === "connected") {
-    statusText = view.name;
-  } else if (view.status === "disconnected") {
-    statusText = view.message;
-  }
-
   return (
     <footer className="status-bar">
-      <span className={connectionStatusClass(view.status)} role="status">
-        {statusText}
+      <span className="status-text" role="status">
+        <StatusPill label={pill.label} tone={pill.tone} pulse={view.status === "connecting"} />
+        {view.status === "disconnected" ? <span className="status-message">{view.message}</span> : null}
       </span>
       <select
         aria-label="Engine"

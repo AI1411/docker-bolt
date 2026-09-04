@@ -261,14 +261,68 @@ button.primary:not(:disabled):hover {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
-.status-text.warn {
-  color: var(--warn);
+.status-message {
+  color: var(--fg-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
-.status-text.ok {
+.status-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 22px;
+  padding: 0 8px 0 6px;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--border);
+  background: rgba(255, 255, 255, 0.06);
+  font-size: 12px;
+  line-height: 12px;
+  letter-spacing: normal;
   color: var(--fg);
+  flex-shrink: 0;
+}
+
+.status-pill-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--fg-muted);
+  flex-shrink: 0;
+}
+
+.status-pill.ok .status-pill-dot {
+  background: var(--ok);
+}
+
+.status-pill.warn .status-pill-dot {
+  background: var(--warn);
+}
+
+.status-pill.pulse .status-pill-dot {
+  animation: pill-pulse 1.2s ease-in-out infinite;
+}
+
+@keyframes pill-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.45;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .status-pill.pulse .status-pill-dot {
+    animation: none;
+  }
 }
 
 .screen {
@@ -403,7 +457,7 @@ button.primary:not(:disabled):hover {
 }
 
 .row[data-cols="containers"] {
-  grid-template-columns: 40px minmax(120px, 1.6fr) 88px 108px 132px;
+  grid-template-columns: 40px minmax(120px, 1.6fr) 108px 108px 132px;
 }
 
 .row[data-cols="compose"] {

@@ -1,7 +1,9 @@
 import { useState } from "react";
 import { ConfirmDialog } from "../components/ConfirmDialog";
 import { ResourceTile } from "../components/icons";
+import { StatusPill } from "../components/StatusPill";
 import { buttonClass } from "../lib/buttonClass";
+import { resourceStatusPill } from "../lib/statusPill";
 import { VirtualTable } from "../components/VirtualTable";
 import { api, ipcErrorMessage } from "../lib/tauri";
 import { useCompose } from "../stores/compose";
@@ -84,7 +86,9 @@ export function Compose() {
                   {row.service_count} services · {row.running_count}/{row.container_count} containers
                 </span>
               </span>
-              <span className="cell muted">{row.status}</span>
+              <span className="cell">
+                <StatusPill {...resourceStatusPill(row.status, row.status === "running")} />
+              </span>
             </div>
           );
         }}
