@@ -1,6 +1,7 @@
 import { useEffect, useMemo } from "react";
 import { useParams } from "react-router-dom";
 import { VirtualTable } from "../components/VirtualTable";
+import { logRowClass } from "../lib/logRowClass";
 import { filterLines, type StreamFilter } from "../lib/logFilter";
 import { StatusPill } from "../components/StatusPill";
 import { buttonClass } from "../lib/buttonClass";
@@ -60,7 +61,7 @@ export function Logs() {
   }, [containerId, connectionStatus, engineId]);
 
   return (
-    <div className="screen">
+    <div className="screen logs-screen">
       <div className="logs-header">
         <span className="logs-name">{name}</span>
         <StatusPill {...resourceStatusPill(container?.state ?? "", running)} />
@@ -72,6 +73,7 @@ export function Logs() {
           className="log-search"
           value={query}
           placeholder="Search logs…"
+          aria-label="Search logs"
           onChange={(event) => setQuery(event.target.value)}
         />
         <select
@@ -94,11 +96,8 @@ export function Logs() {
         rowRenderer={(index) => {
           const line = filtered[index];
           return (
-            <div
-              className={`row log-row${line.stream === "stderr" ? " stderr" : ""}`}
-              data-cols="logs"
-            >
-              <span className="cell mono">{fmtLogTime(line.timestamp_unix_ms)}</span>
+            <div className={logRowClass(line.stream)} data-cols="logs">
+              <span className="cell mono time">{fmtLogTime(line.timestamp_unix_ms)}</span>
               <span className="cell mono" title={line.raw}>
                 {line.raw}
               </span>

@@ -19,6 +19,7 @@
   --accent-bright: #2997ff;
   --ok: #30d158;
   --warn: #f5a524;
+  --stderr: #f87171;
   --danger: #c41e3a;
   --status-h: 44px;
   --sidebar-w: 200px;
@@ -705,6 +706,16 @@ button.primary:not(:disabled):hover {
   height: 25px;
 }
 
+.logs-screen .vtable,
+.logs-screen .vtable-body {
+  background: #0a0a0a;
+}
+
+.log-row .cell.time {
+  color: var(--fg-muted);
+}
+
 .log-row.stderr {
-  color: var(--accent-bright);
+  color: var(--stderr);
+  background: rgba(248, 113, 113, 0.08);
 }
