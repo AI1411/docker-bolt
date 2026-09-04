@@ -19,7 +19,7 @@
   --accent-bright: #2997ff;
   --ok: #30d158;
   --warn: #f5a524;
-  --danger: #1d1d1f;
+  --danger: #c41e3a;
   --status-h: 44px;
   --sidebar-w: 200px;
   --radius-pill: 980px;
@@ -132,14 +132,13 @@ a:focus-visible,
 }
 
 button.danger {
-  background: transparent;
-  border-color: #ff453a;
-  color: #ff453a;
+  background: var(--danger);
+  border-color: var(--danger);
+  color: #fff;
 }
 
 button.danger:not(:disabled):hover {
-  background: rgba(255, 69, 58, 0.12);
-  filter: none;
+  filter: brightness(1.08);
 }
 
 button.primary:not(:disabled):hover {
