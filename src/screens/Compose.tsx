@@ -4,6 +4,7 @@ import { ListSearch } from "../components/ListSearch";
 import { ResourceTile } from "../components/icons";
 import { StatusPill } from "../components/StatusPill";
 import { buttonClass } from "../lib/buttonClass";
+import { composeUpCancelled } from "../lib/composeUp";
 import { filterByQuery, noMatchCopy } from "../lib/listFilter";
 import { listRowA11y } from "../lib/listKeys";
 import { resourceStatusPill } from "../lib/statusPill";
@@ -55,6 +56,21 @@ export function Compose() {
       });
     },
   });
+
+  async function onUp() {
+    if (!connected || busy) return;
+    setBusy(true);
+    try {
+      const picked = await api.pickComposeFile();
+      if (composeUpCancelled(picked.path)) return;
+      await api.upComposeFile(picked.path);
+      await reload();
+    } catch (err) {
+      setDialog({ kind: "error", body: ipcErrorMessage(err) });
+    } finally {
+      setBusy(false);
+    }
+  }
 
   async function runCommand(command: (project: string) => Promise<unknown>, project: string) {
     setBusy(true);
@@ -145,6 +161,14 @@ export function Compose() {
           onClick={() => void reload()}
         >
           Refresh
+        </button>
+        <button
+          type="button"
+          className={buttonClass("ghost")}
+          disabled={!connected || busy}
+          onClick={() => void onUp()}
+        >
+          Up…
         </button>
         <button
           type="button"

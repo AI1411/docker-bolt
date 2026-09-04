@@ -1,6 +1,7 @@
 pub mod bollard_client;
 pub mod client;
 pub mod compose;
+pub mod compose_file;
 pub mod containers;
 pub mod engine;
 pub mod error;
