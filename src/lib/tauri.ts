@@ -51,6 +51,18 @@ export type ImageRow = {
   in_use: boolean;
 };
 export type VolumeRow = { name: string; driver: string };
+export type PrunePreview = {
+  stopped_containers: number;
+  dangling_images: number;
+  unused_networks: number;
+};
+export type PruneReport = {
+  containers_deleted: number;
+  images_deleted: number;
+  networks_deleted: number;
+  space_reclaimed_bytes: number;
+  error?: string;
+};
 export type ComposeProjectStatus = "running" | "partial" | "stopped";
 export type ComposeProjectRow = {
   project: string;
@@ -136,6 +148,8 @@ export const api = {
     invoke("stop_compose_project", { project }),
   downComposeProject: (project: string) =>
     invoke("down_compose_project", { project }),
+  prunePreview: () => invoke<PrunePreview>("prune_preview"),
+  pruneNow: () => invoke<PruneReport>("prune_now"),
   refresh: (resource: RefreshResourceName | "all") =>
     invoke<RefreshAll | ContainerRow[] | ImageRow[] | VolumeRow[]>("refresh", {
       resource,

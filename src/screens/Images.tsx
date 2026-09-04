@@ -15,8 +15,11 @@ import {
   toggleId,
   unusedImageIds,
 } from "../lib/imageGroups";
-import { api, ipcErrorCode, ipcErrorMessage, type ImageRow } from "../lib/tauri";
+import { pruneConfirmBody, pruneHasWork } from "../lib/prune";
+import { api, ipcErrorCode, ipcErrorMessage, type ImageRow, type PrunePreview } from "../lib/tauri";
+import { useCompose } from "../stores/compose";
 import { useConnection } from "../stores/connection";
+import { useContainers } from "../stores/containers";
 import { useImages } from "../stores/images";
 
 function imageLabel(row: ImageRow): string {
@@ -34,7 +37,9 @@ function TrashIcon() {
   );
 }
 
-type Dialog = { kind: "error"; body: string };
+type Dialog =
+  | { kind: "error"; body: string }
+  | { kind: "prune"; preview: PrunePreview };
 
 export function Images() {
   const view = useConnection((s) => s.view);
@@ -118,6 +123,49 @@ export function Images() {
       if (deleted.length > 0) removeRows(deleted);
       if (sawNotFound) await reload();
       if (lastError) setDialog({ kind: "error", body: lastError });
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function openPrune() {
+    if (busy) return;
+    setBusy(true);
+    try {
+      const preview = await api.prunePreview();
+      setDialog({ kind: "prune", preview });
+    } catch (err) {
+      setDialog({ kind: "error", body: ipcErrorMessage(err) });
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function confirmPrune() {
+    setBusy(true);
+    try {
+      const report = await api.pruneNow();
+      await Promise.all([
+        useContainers.getState().reload(),
+        reload(),
+        useCompose.getState().reload(),
+      ]);
+      if (report.error) {
+        const extra =
+          report.space_reclaimed_bytes > 0
+            ? ` Reclaimed ${fmtBytes(report.space_reclaimed_bytes)}.`
+            : "";
+        setDialog({ kind: "error", body: `${report.error}${extra}` });
+      } else {
+        setDialog(null);
+      }
+    } catch (err) {
+      await Promise.all([
+        useContainers.getState().reload(),
+        reload(),
+        useCompose.getState().reload(),
+      ]);
+      setDialog({ kind: "error", body: ipcErrorMessage(err) });
     } finally {
       setBusy(false);
     }
@@ -303,6 +351,14 @@ export function Images() {
         </button>
         <button
           type="button"
+          className={buttonClass("ghost")}
+          disabled={!connected || loading || busy}
+          onClick={() => void openPrune()}
+        >
+          Prune…
+        </button>
+        <button
+          type="button"
           className={buttonClass("danger")}
           disabled={!connected || deleteTargets.length === 0 || busy}
           onClick={() => void deleteImages(deleteTargets)}
@@ -311,7 +367,20 @@ export function Images() {
         </button>
       </div>
       {body()}
-      {dialog ? (
+      {dialog?.kind === "prune" ? (
+        <ConfirmDialog
+          title="Prune unused Docker data"
+          body={pruneConfirmBody(dialog.preview)}
+          confirmLabel="Prune"
+          confirmVariant="danger"
+          confirmDisabled={busy || !pruneHasWork(dialog.preview)}
+          onCancel={() => {
+            if (!busy) setDialog(null);
+          }}
+          onConfirm={() => void confirmPrune()}
+        />
+      ) : null}
+      {dialog?.kind === "error" ? (
         <ConfirmDialog
           title="Error"
           body={dialog.body}

@@ -17,7 +17,7 @@ use dockbolt_core::logs::{
 use dockbolt_core::volumes::sort_volumes;
 use dockbolt_core::{
     ComposeProjectRow, ConnectionView, ContainerInspect, ContainerRow, DockboltError,
-    EngineCandidate, EngineEvent, ImageRow, LogLine, VolumeRow,
+    EngineCandidate, EngineEvent, ImageRow, LogLine, PrunePreview, PruneReport, VolumeRow,
 };
 use futures::{Stream, StreamExt};
 use serde::{Deserialize, Serialize};
@@ -655,6 +655,18 @@ async fn inspect_container(
 }
 
 #[tauri::command(rename_all = "snake_case")]
+async fn prune_preview(state: State<'_, AppState>) -> Result<PrunePreview, IpcError> {
+    let docker = docker_from_state(&state).await?;
+    Ok(dockbolt_core::prune::prune_preview(docker.as_ref()).await?)
+}
+
+#[tauri::command(rename_all = "snake_case")]
+async fn prune_now(state: State<'_, AppState>) -> Result<PruneReport, IpcError> {
+    let docker = docker_from_state(&state).await?;
+    Ok(dockbolt_core::prune::run_prune(docker.as_ref()).await?)
+}
+
+#[tauri::command(rename_all = "snake_case")]
 async fn open_url(url: String) -> Result<OkReply, IpcError> {
     if !dockbolt_core::ports::is_allowed_browser_url(&url) {
         return Err(IpcError {
@@ -904,6 +916,8 @@ pub fn run() {
             stop_container,
             restart_container,
             inspect_container,
+            prune_preview,
+            prune_now,
             open_url,
             delete_image,
             delete_volume,
