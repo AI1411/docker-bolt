@@ -9,7 +9,7 @@ export function filterByQuery<T>(rows: T[], query: string, fields: (row: T) => s
 }
 
 export function noMatchCopy(
-  noun: "containers" | "images" | "volumes" | "compose projects",
+  noun: "containers" | "images" | "volumes" | "networks" | "compose projects",
   query: string,
   total: number,
   visible: number,

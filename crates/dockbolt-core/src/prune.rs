@@ -2,6 +2,7 @@ use std::collections::HashSet;
 
 use crate::client::DockerPort;
 use crate::error::DockboltError;
+use crate::networks::is_system_network;
 use crate::types::{ImageRow, NetworkRow, PrunePreview, PruneReport};
 
 pub fn is_dangling_image(image: &ImageRow) -> bool {
@@ -9,10 +10,6 @@ pub fn is_dangling_image(image: &ImageRow) -> bool {
         .tags
         .iter()
         .all(|tag| tag.is_empty() || tag == "<none>")
-}
-
-pub fn is_system_network(name: &str) -> bool {
-    matches!(name, "bridge" | "host" | "none")
 }
 
 pub fn unused_user_networks(networks: &[NetworkRow], used_names: &HashSet<String>) -> u32 {
@@ -232,16 +229,22 @@ mod tests {
                 NetworkRow {
                     id: "b".into(),
                     name: "bridge".into(),
+                    driver: "bridge".into(),
+                    scope: "local".into(),
                     compose_project: None,
                 },
                 NetworkRow {
                     id: "u".into(),
                     name: "unused".into(),
+                    driver: "bridge".into(),
+                    scope: "local".into(),
                     compose_project: None,
                 },
                 NetworkRow {
                     id: "k".into(),
                     name: "keep".into(),
+                    driver: "bridge".into(),
+                    scope: "local".into(),
                     compose_project: None,
                 },
             ],

@@ -14,10 +14,12 @@ use dockbolt_core::images::{classify_images, sort_images};
 use dockbolt_core::logs::{
     should_flush, BatchQueue, LogSeq, LOG_BATCH_WINDOW, LOG_CHANNEL_CAPACITY,
 };
+use dockbolt_core::networks::sort_networks;
 use dockbolt_core::volumes::sort_volumes;
 use dockbolt_core::{
     ComposeProjectRow, ConnectionView, ContainerInspect, ContainerRow, DockboltError,
-    EngineCandidate, EngineEvent, ImageRow, LogLine, PrunePreview, PruneReport, VolumeRow,
+    EngineCandidate, EngineEvent, ImageRow, LogLine, NetworkRow, PrunePreview, PruneReport,
+    VolumeRow,
 };
 use futures::{Stream, StreamExt};
 use serde::{Deserialize, Serialize};
@@ -530,6 +532,13 @@ async fn list_volumes_inner(state: &AppState) -> Result<Vec<VolumeRow>, IpcError
     Ok(rows)
 }
 
+async fn list_networks_inner(state: &AppState) -> Result<Vec<NetworkRow>, IpcError> {
+    let docker = docker_from_state(state).await?;
+    let mut rows = docker.list_networks().await?;
+    sort_networks(&mut rows);
+    Ok(rows)
+}
+
 #[tauri::command]
 async fn list_engines() -> Result<Vec<EngineCandidate>, IpcError> {
     Ok(probe_engines().await)
@@ -559,6 +568,11 @@ async fn list_images(state: State<'_, AppState>) -> Result<Vec<ImageRow>, IpcErr
 #[tauri::command]
 async fn list_volumes(state: State<'_, AppState>) -> Result<Vec<VolumeRow>, IpcError> {
     list_volumes_inner(&state).await
+}
+
+#[tauri::command]
+async fn list_networks(state: State<'_, AppState>) -> Result<Vec<NetworkRow>, IpcError> {
+    list_networks_inner(&state).await
 }
 
 #[tauri::command(rename_all = "snake_case")]
@@ -698,6 +712,22 @@ async fn delete_volume(state: State<'_, AppState>, name: String) -> Result<OkRep
 }
 
 #[tauri::command(rename_all = "snake_case")]
+async fn delete_network(state: State<'_, AppState>, id: String) -> Result<OkReply, IpcError> {
+    let IdArg { id } = IdArg { id };
+    let docker = docker_from_state(&state).await?;
+    let rows = docker.list_networks().await?;
+    let row = rows
+        .into_iter()
+        .find(|r| r.id == id)
+        .ok_or_else(|| IpcError {
+            code: DockboltError::NotFound(id.clone()).code().to_string(),
+            message: format!("network {id} not found"),
+        })?;
+    dockbolt_core::networks::delete_network(docker.as_ref(), &row).await?;
+    Ok(OkReply { ok: true })
+}
+
+#[tauri::command(rename_all = "snake_case")]
 async fn refresh(
     state: State<'_, AppState>,
     resource: String,
@@ -709,14 +739,19 @@ async fn refresh(
         }
         "images" => serde_json::to_value(list_images_inner(&state).await?).map_err(ipc_internal),
         "volumes" => serde_json::to_value(list_volumes_inner(&state).await?).map_err(ipc_internal),
+        "networks" => {
+            serde_json::to_value(list_networks_inner(&state).await?).map_err(ipc_internal)
+        }
         "all" => {
             let containers = list_containers_inner(&state).await?;
             let images = list_images_inner(&state).await?;
             let volumes = list_volumes_inner(&state).await?;
+            let networks = list_networks_inner(&state).await?;
             serde_json::to_value(serde_json::json!({
                 "containers": containers,
                 "images": images,
                 "volumes": volumes,
+                "networks": networks,
             }))
             .map_err(ipc_internal)
         }
@@ -907,6 +942,7 @@ pub fn run() {
             list_containers,
             list_images,
             list_volumes,
+            list_networks,
             list_compose_projects,
             start_compose_project,
             stop_compose_project,
@@ -921,6 +957,7 @@ pub fn run() {
             open_url,
             delete_image,
             delete_volume,
+            delete_network,
             refresh,
             start_logs,
             stop_logs

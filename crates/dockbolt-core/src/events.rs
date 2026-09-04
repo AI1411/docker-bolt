@@ -27,7 +27,7 @@ pub fn resources_from_docker_type(ty: &str) -> Vec<ResourceKind> {
         "container" => vec![ResourceKind::Containers, ResourceKind::Compose],
         "image" => vec![ResourceKind::Images],
         "volume" => vec![ResourceKind::Volumes],
-        "network" => vec![ResourceKind::Compose],
+        "network" => vec![ResourceKind::Networks, ResourceKind::Compose],
         _ => vec![],
     }
 }

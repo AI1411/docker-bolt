@@ -544,6 +544,10 @@ button.primary:not(:disabled):hover {
   grid-template-columns: 40px minmax(140px, 2fr);
 }
 
+.row[data-cols="networks"] {
+  grid-template-columns: 40px minmax(120px, 1.6fr) 88px 88px;
+}
+
 .cell.check {
   display: flex;
   align-items: center;
