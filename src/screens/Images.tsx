@@ -1,6 +1,7 @@
 import { useMemo, useRef, useState } from "react";
 import { ConfirmDialog } from "../components/ConfirmDialog";
 import { ResourceTile } from "../components/icons";
+import { buttonClass } from "../lib/buttonClass";
 import { VirtualTable } from "../components/VirtualTable";
 import { fmtBytes, fmtTime, shortId } from "../lib/format";
 import { resourceIconKind } from "../lib/resourceIcon";
@@ -127,7 +128,7 @@ export function Images() {
       return (
         <div className="empty">
           <p>{view.message}</p>
-          <button type="button" onClick={() => void retry()}>
+          <button type="button" className={buttonClass("primary")} onClick={() => void retry()}>
             Retry
           </button>
         </div>
@@ -245,11 +246,18 @@ export function Images() {
   return (
     <div className="screen">
       <div className="toolbar">
-        <button type="button" disabled={!connected || loading} onClick={() => void reload()}>
+        <span className="toolbar-title">Images</span>
+        <button
+          type="button"
+          className={buttonClass("ghost")}
+          disabled={!connected || loading}
+          onClick={() => void reload()}
+        >
           Refresh
         </button>
         <button
           type="button"
+          className={buttonClass("danger")}
           disabled={!connected || deleteTargets.length === 0 || busy}
           onClick={() => void deleteImages(deleteTargets)}
         >

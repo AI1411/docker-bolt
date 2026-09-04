@@ -2,6 +2,7 @@ import { useEffect, useMemo } from "react";
 import { useParams } from "react-router-dom";
 import { VirtualTable } from "../components/VirtualTable";
 import { filterLines, type StreamFilter } from "../lib/logFilter";
+import { buttonClass } from "../lib/buttonClass";
 import { runDotClass } from "../lib/chromeTone";
 import { shortId } from "../lib/format";
 import { useConnection } from "../stores/connection";
@@ -82,7 +83,7 @@ export function Logs() {
           <option value="stdout">stdout</option>
           <option value="stderr">stderr</option>
         </select>
-        <button type="button" onClick={() => clearFilters()}>
+        <button type="button" className={buttonClass("ghost")} onClick={() => clearFilters()}>
           Clear
         </button>
       </div>

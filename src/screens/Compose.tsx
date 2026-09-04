@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { ConfirmDialog } from "../components/ConfirmDialog";
 import { ResourceTile } from "../components/icons";
+import { buttonClass } from "../lib/buttonClass";
 import { VirtualTable } from "../components/VirtualTable";
 import { api, ipcErrorMessage } from "../lib/tauri";
 import { useCompose } from "../stores/compose";
@@ -50,7 +51,7 @@ export function Compose() {
       return (
         <div className="empty">
           <p>{view.message}</p>
-          <button type="button" onClick={() => void retry()}>
+          <button type="button" className={buttonClass("primary")} onClick={() => void retry()}>
             Retry
           </button>
         </div>
@@ -96,11 +97,18 @@ export function Compose() {
   return (
     <div className="screen">
       <div className="toolbar">
-        <button type="button" disabled={!connected || loading} onClick={() => void reload()}>
+        <span className="toolbar-title">Compose</span>
+        <button
+          type="button"
+          className={buttonClass("ghost")}
+          disabled={!connected || loading}
+          onClick={() => void reload()}
+        >
           Refresh
         </button>
         <button
           type="button"
+          className={buttonClass("primary")}
           disabled={commandDisabled}
           onClick={() => selected && void runCommand(api.startComposeProject, selected.project)}
         >
@@ -108,6 +116,7 @@ export function Compose() {
         </button>
         <button
           type="button"
+          className={buttonClass("ghost")}
           disabled={commandDisabled}
           onClick={() => selected && void runCommand(api.stopComposeProject, selected.project)}
         >
@@ -115,6 +124,7 @@ export function Compose() {
         </button>
         <button
           type="button"
+          className={buttonClass("danger")}
           disabled={commandDisabled}
           onClick={() => {
             if (!selected || busy) return;
@@ -134,6 +144,7 @@ export function Compose() {
           title="Down compose project"
           body={dialog.body}
           confirmLabel="Down"
+          confirmVariant="danger"
           confirmDisabled={busy}
           onCancel={() => {
             if (!busy) setDialog(null);
