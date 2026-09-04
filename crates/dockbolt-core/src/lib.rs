@@ -227,10 +227,12 @@ mod image_volume_tests {
             VolumeRow {
                 name: "b".into(),
                 driver: "local".into(),
+                in_use: true,
             },
             VolumeRow {
                 name: "a".into(),
                 driver: "local".into(),
+                in_use: true,
             },
         ];
         sort_volumes(&mut rows);

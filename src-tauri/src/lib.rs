@@ -15,7 +15,7 @@ use dockbolt_core::logs::{
     should_flush, BatchQueue, LogSeq, LOG_BATCH_WINDOW, LOG_CHANNEL_CAPACITY,
 };
 use dockbolt_core::networks::sort_networks;
-use dockbolt_core::volumes::sort_volumes;
+use dockbolt_core::volumes::list_classified_volumes;
 use dockbolt_core::{
     ComposeProjectRow, ConnectionView, ContainerInspect, ContainerRow, DockboltError,
     EngineCandidate, EngineEvent, ImageRow, LogLine, NetworkRow, PrunePreview, PruneReport,
@@ -527,9 +527,7 @@ async fn list_images_inner(state: &AppState) -> Result<Vec<ImageRow>, IpcError> 
 
 async fn list_volumes_inner(state: &AppState) -> Result<Vec<VolumeRow>, IpcError> {
     let docker = docker_from_state(state).await?;
-    let mut rows = docker.list_volumes().await?;
-    sort_volumes(&mut rows);
-    Ok(rows)
+    Ok(list_classified_volumes(docker.as_ref()).await?)
 }
 
 async fn list_networks_inner(state: &AppState) -> Result<Vec<NetworkRow>, IpcError> {
