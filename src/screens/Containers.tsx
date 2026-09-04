@@ -2,7 +2,9 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { ConfirmDialog } from "../components/ConfirmDialog";
 import { ResourceTile } from "../components/icons";
+import { StatusPill } from "../components/StatusPill";
 import { buttonClass } from "../lib/buttonClass";
+import { resourceStatusPill } from "../lib/statusPill";
 import { VirtualTable } from "../components/VirtualTable";
 import { fmtTime, shortId } from "../lib/format";
 import { resourceIconKind } from "../lib/resourceIcon";
@@ -111,7 +113,9 @@ export function Containers() {
                   {row.image}
                 </span>
               </span>
-              <span className="cell muted">{row.state}</span>
+              <span className="cell">
+                <StatusPill {...resourceStatusPill(row.state, row.running)} />
+              </span>
               <span className="cell mono muted">{shortId(row.id)}</span>
               <span className="cell muted">{fmtTime(row.created_unix)}</span>
             </div>
