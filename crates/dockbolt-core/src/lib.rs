@@ -6,6 +6,7 @@ pub mod engine;
 pub mod error;
 pub mod events;
 pub mod images;
+pub mod inspect;
 pub mod logs;
 pub mod ports;
 pub mod types;

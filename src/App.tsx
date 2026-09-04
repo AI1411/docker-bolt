@@ -14,6 +14,7 @@ import { useContainers } from "./stores/containers";
 import { useImages } from "./stores/images";
 import { useLogs } from "./stores/logs";
 import { useVolumes } from "./stores/volumes";
+import { useInspect } from "./stores/inspect";
 
 export default function App() {
   useEffect(() => {
@@ -28,6 +29,7 @@ export default function App() {
           useImages.getState().clear();
           useVolumes.getState().clear();
           useLogs.getState().reset();
+          useInspect.getState().clear();
         }
         useConnection.getState().setView(view);
       });
@@ -36,6 +38,7 @@ export default function App() {
         if (resource === "containers") {
           void useContainers.getState().reload();
           void useImages.getState().reload();
+          useInspect.getState().invalidate();
         }
         if (resource === "images") void useImages.getState().reload();
         if (resource === "volumes") void useVolumes.getState().reload();

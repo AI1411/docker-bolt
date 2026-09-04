@@ -11,10 +11,11 @@ use crate::client::DockerPort;
 use crate::containers::normalize_container_name;
 use crate::error::{map_status_and_message, DockboltError};
 use crate::events::resources_from_docker_type;
+use crate::inspect::{binding_to_published, parse_env_entry, restart_policy_label};
 use crate::logs::{parse_docker_log_text, LOG_TAIL};
 use crate::types::{
-    ContainerRow, EngineEvent, ImageRow, LogStream, NetworkRow, PublishedPort, RawLogChunk,
-    VolumeRow,
+    ContainerInspect, ContainerRow, EngineEvent, ImageRow, InspectMount, LogStream, NetworkRow,
+    PublishedPort, RawLogChunk, VolumeRow,
 };
 
 pub struct BollardDocker {
@@ -156,6 +157,115 @@ impl DockerPort for BollardDocker {
                 }
             })
             .collect())
+    }
+
+    async fn inspect_container(&self, id: &str) -> Result<ContainerInspect, DockboltError> {
+        let info = self
+            .docker
+            .inspect_container(id, None)
+            .await
+            .map_err(map_bollard_error)?;
+        let name = crate::containers::normalize_container_name(
+            &info
+                .name
+                .as_deref()
+                .map(|n| vec![n.to_string()])
+                .unwrap_or_default(),
+            info.id.as_deref().unwrap_or(id),
+        );
+        let state = info
+            .state
+            .as_ref()
+            .and_then(|s| s.status.as_ref())
+            .map(|s| s.to_string().to_lowercase())
+            .unwrap_or_default();
+        let image = info
+            .config
+            .as_ref()
+            .and_then(|c| c.image.clone())
+            .or(info.image.clone())
+            .unwrap_or_default();
+        let env = info
+            .config
+            .as_ref()
+            .and_then(|c| c.env.clone())
+            .unwrap_or_default()
+            .iter()
+            .map(|raw| parse_env_entry(raw))
+            .collect();
+        let mounts = info
+            .mounts
+            .unwrap_or_default()
+            .into_iter()
+            .map(|m| InspectMount {
+                source: m.source.unwrap_or_default(),
+                destination: m.destination.unwrap_or_default(),
+            })
+            .filter(|m| !m.source.is_empty() || !m.destination.is_empty())
+            .collect();
+        let networks = info
+            .network_settings
+            .as_ref()
+            .and_then(|n| n.networks.as_ref())
+            .map(|nets| {
+                let mut names: Vec<String> = nets.keys().cloned().collect();
+                names.sort();
+                names
+            })
+            .unwrap_or_default();
+        let ports = info
+            .network_settings
+            .as_ref()
+            .and_then(|n| n.ports.as_ref())
+            .map(|map| {
+                let mut out = Vec::new();
+                for (spec, bindings) in map {
+                    for binding in bindings.iter().flatten() {
+                        if let Some(port) = binding_to_published(
+                            spec,
+                            binding.host_ip.as_deref().unwrap_or(""),
+                            binding.host_port.as_deref().unwrap_or(""),
+                        ) {
+                            out.push(port);
+                        }
+                    }
+                }
+                out
+            })
+            .unwrap_or_default();
+        let (policy_name, retry) = info
+            .host_config
+            .as_ref()
+            .and_then(|h| h.restart_policy.as_ref())
+            .map(|p| {
+                (
+                    p.name
+                        .as_ref()
+                        .map(|n| {
+                            let raw = n.to_string().to_lowercase().replace('_', "-");
+                            if raw == "empty" {
+                                String::new()
+                            } else {
+                                raw
+                            }
+                        })
+                        .unwrap_or_default(),
+                    p.maximum_retry_count.unwrap_or(0),
+                )
+            })
+            .unwrap_or_else(|| (String::new(), 0));
+        Ok(ContainerInspect {
+            id: info.id.unwrap_or_else(|| id.to_string()),
+            name,
+            image,
+            state,
+            created: info.created.unwrap_or_default(),
+            ports,
+            mounts,
+            networks,
+            restart_policy: restart_policy_label(&policy_name, retry),
+            env,
+        })
     }
 
     async fn remove_container(&self, id: &str, force: bool) -> Result<(), DockboltError> {

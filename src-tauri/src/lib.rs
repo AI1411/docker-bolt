@@ -16,8 +16,8 @@ use dockbolt_core::logs::{
 };
 use dockbolt_core::volumes::sort_volumes;
 use dockbolt_core::{
-    ComposeProjectRow, ConnectionView, ContainerRow, DockboltError, EngineCandidate, EngineEvent,
-    ImageRow, LogLine, VolumeRow,
+    ComposeProjectRow, ConnectionView, ContainerInspect, ContainerRow, DockboltError,
+    EngineCandidate, EngineEvent, ImageRow, LogLine, VolumeRow,
 };
 use futures::{Stream, StreamExt};
 use serde::{Deserialize, Serialize};
@@ -645,6 +645,16 @@ async fn restart_container(state: State<'_, AppState>, id: String) -> Result<OkR
 }
 
 #[tauri::command(rename_all = "snake_case")]
+async fn inspect_container(
+    state: State<'_, AppState>,
+    id: String,
+) -> Result<ContainerInspect, IpcError> {
+    let IdArg { id } = IdArg { id };
+    let docker = docker_from_state(&state).await?;
+    Ok(dockbolt_core::inspect::inspect_container(docker.as_ref(), &id).await?)
+}
+
+#[tauri::command(rename_all = "snake_case")]
 async fn open_url(url: String) -> Result<OkReply, IpcError> {
     if !dockbolt_core::ports::is_allowed_browser_url(&url) {
         return Err(IpcError {
@@ -893,6 +903,7 @@ pub fn run() {
             start_container,
             stop_container,
             restart_container,
+            inspect_container,
             open_url,
             delete_image,
             delete_volume,
