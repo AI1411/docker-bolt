@@ -29,6 +29,18 @@ pub async fn delete_container(
         .await
 }
 
+pub async fn start_container(docker: &dyn DockerPort, id: &str) -> Result<(), DockboltError> {
+    docker.start_container(id).await
+}
+
+pub async fn stop_container(docker: &dyn DockerPort, id: &str) -> Result<(), DockboltError> {
+    docker.stop_container(id).await
+}
+
+pub async fn restart_container(docker: &dyn DockerPort, id: &str) -> Result<(), DockboltError> {
+    docker.restart_container(id).await
+}
+
 #[cfg(test)]
 mod delete_tests {
     use super::*;
@@ -59,6 +71,9 @@ mod delete_tests {
             Ok(())
         }
         async fn stop_container(&self, _id: &str) -> Result<(), DockboltError> {
+            Ok(())
+        }
+        async fn restart_container(&self, _id: &str) -> Result<(), DockboltError> {
             Ok(())
         }
         async fn list_networks(&self) -> Result<Vec<NetworkRow>, DockboltError> {
@@ -130,5 +145,101 @@ mod delete_tests {
         };
         delete_container(&docker, &row).await.unwrap();
         assert_eq!(*last.lock().unwrap(), Some(false));
+    }
+}
+
+#[cfg(test)]
+mod lifecycle_tests {
+    use super::*;
+    use crate::client::DockerPort;
+    use crate::types::{EngineEvent, ImageRow, NetworkRow, RawLogChunk, VolumeRow};
+    use async_trait::async_trait;
+    use futures::Stream;
+    use std::pin::Pin;
+    use std::sync::{Arc, Mutex};
+
+    struct Mock {
+        last: Arc<Mutex<Option<String>>>,
+        fail: bool,
+    }
+
+    #[async_trait]
+    impl DockerPort for Mock {
+        async fn version(&self) -> Result<String, DockboltError> {
+            Ok("1".into())
+        }
+        async fn list_containers(&self) -> Result<Vec<ContainerRow>, DockboltError> {
+            Ok(vec![])
+        }
+        async fn remove_container(&self, _id: &str, _force: bool) -> Result<(), DockboltError> {
+            Ok(())
+        }
+        async fn start_container(&self, id: &str) -> Result<(), DockboltError> {
+            *self.last.lock().unwrap() = Some(format!("start:{id}"));
+            if self.fail {
+                return Err(DockboltError::Internal("cannot start".into()));
+            }
+            Ok(())
+        }
+        async fn stop_container(&self, id: &str) -> Result<(), DockboltError> {
+            *self.last.lock().unwrap() = Some(format!("stop:{id}"));
+            Ok(())
+        }
+        async fn restart_container(&self, id: &str) -> Result<(), DockboltError> {
+            *self.last.lock().unwrap() = Some(format!("restart:{id}"));
+            Ok(())
+        }
+        async fn list_networks(&self) -> Result<Vec<NetworkRow>, DockboltError> {
+            Ok(vec![])
+        }
+        async fn remove_network(&self, _id: &str) -> Result<(), DockboltError> {
+            Ok(())
+        }
+        async fn list_images(&self) -> Result<Vec<ImageRow>, DockboltError> {
+            Ok(vec![])
+        }
+        async fn remove_image(&self, _id: &str) -> Result<(), DockboltError> {
+            Ok(())
+        }
+        async fn list_volumes(&self) -> Result<Vec<VolumeRow>, DockboltError> {
+            Ok(vec![])
+        }
+        async fn remove_volume(&self, _name: &str) -> Result<(), DockboltError> {
+            Ok(())
+        }
+        fn logs(
+            &self,
+            _container_id: &str,
+        ) -> Pin<Box<dyn Stream<Item = Result<RawLogChunk, DockboltError>> + Send>> {
+            Box::pin(futures::stream::empty())
+        }
+        fn events(&self) -> Pin<Box<dyn Stream<Item = Result<EngineEvent, DockboltError>> + Send>> {
+            Box::pin(futures::stream::empty())
+        }
+    }
+
+    #[tokio::test]
+    async fn start_stop_restart_call_engine() {
+        let last = Arc::new(Mutex::new(None));
+        let docker = Mock {
+            last: last.clone(),
+            fail: false,
+        };
+        start_container(&docker, "abc").await.unwrap();
+        assert_eq!(last.lock().unwrap().as_deref(), Some("start:abc"));
+        stop_container(&docker, "abc").await.unwrap();
+        assert_eq!(last.lock().unwrap().as_deref(), Some("stop:abc"));
+        restart_container(&docker, "abc").await.unwrap();
+        assert_eq!(last.lock().unwrap().as_deref(), Some("restart:abc"));
+    }
+
+    #[tokio::test]
+    async fn start_error_is_returned() {
+        let docker = Mock {
+            last: Arc::new(Mutex::new(None)),
+            fail: true,
+        };
+        let err = start_container(&docker, "abc").await.unwrap_err();
+        assert_eq!(err.code(), "internal");
     }
 }

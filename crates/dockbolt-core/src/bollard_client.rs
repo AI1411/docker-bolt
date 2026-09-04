@@ -47,6 +47,20 @@ pub fn map_bollard_error(err: bollard::errors::Error) -> DockboltError {
     map_status_and_message(status, &msg)
 }
 
+fn ignore_not_modified(result: Result<(), bollard::errors::Error>) -> Result<(), DockboltError> {
+    match result {
+        Ok(()) => Ok(()),
+        Err(err) => {
+            if let bollard::errors::Error::DockerResponseServerError { status_code, .. } = &err {
+                if *status_code == 304 {
+                    return Ok(());
+                }
+            }
+            Err(map_bollard_error(err))
+        }
+    }
+}
+
 fn status_from_message(msg: &str) -> Option<u16> {
     let lower = msg.to_lowercase();
     let marker = "status code";
@@ -141,17 +155,15 @@ impl DockerPort for BollardDocker {
     }
 
     async fn start_container(&self, id: &str) -> Result<(), DockboltError> {
-        self.docker
-            .start_container::<String>(id, None)
-            .await
-            .map_err(map_bollard_error)
+        ignore_not_modified(self.docker.start_container::<String>(id, None).await)
     }
 
     async fn stop_container(&self, id: &str) -> Result<(), DockboltError> {
-        self.docker
-            .stop_container(id, None)
-            .await
-            .map_err(map_bollard_error)
+        ignore_not_modified(self.docker.stop_container(id, None).await)
+    }
+
+    async fn restart_container(&self, id: &str) -> Result<(), DockboltError> {
+        ignore_not_modified(self.docker.restart_container(id, None).await)
     }
 
     async fn list_networks(&self) -> Result<Vec<NetworkRow>, DockboltError> {

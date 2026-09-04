@@ -621,6 +621,30 @@ async fn delete_container(state: State<'_, AppState>, id: String) -> Result<OkRe
 }
 
 #[tauri::command(rename_all = "snake_case")]
+async fn start_container(state: State<'_, AppState>, id: String) -> Result<OkReply, IpcError> {
+    let IdArg { id } = IdArg { id };
+    let docker = docker_from_state(&state).await?;
+    dockbolt_core::containers::start_container(docker.as_ref(), &id).await?;
+    Ok(OkReply { ok: true })
+}
+
+#[tauri::command(rename_all = "snake_case")]
+async fn stop_container(state: State<'_, AppState>, id: String) -> Result<OkReply, IpcError> {
+    let IdArg { id } = IdArg { id };
+    let docker = docker_from_state(&state).await?;
+    dockbolt_core::containers::stop_container(docker.as_ref(), &id).await?;
+    Ok(OkReply { ok: true })
+}
+
+#[tauri::command(rename_all = "snake_case")]
+async fn restart_container(state: State<'_, AppState>, id: String) -> Result<OkReply, IpcError> {
+    let IdArg { id } = IdArg { id };
+    let docker = docker_from_state(&state).await?;
+    dockbolt_core::containers::restart_container(docker.as_ref(), &id).await?;
+    Ok(OkReply { ok: true })
+}
+
+#[tauri::command(rename_all = "snake_case")]
 async fn delete_image(state: State<'_, AppState>, id: String) -> Result<OkReply, IpcError> {
     let IdArg { id } = IdArg { id };
     let docker = docker_from_state(&state).await?;
@@ -851,6 +875,9 @@ pub fn run() {
             stop_compose_project,
             down_compose_project,
             delete_container,
+            start_container,
+            stop_container,
+            restart_container,
             delete_image,
             delete_volume,
             refresh,

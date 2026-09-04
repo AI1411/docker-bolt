@@ -69,6 +69,9 @@ mod tests {
         async fn stop_container(&self, _id: &str) -> Result<(), DockboltError> {
             Ok(())
         }
+        async fn restart_container(&self, _id: &str) -> Result<(), DockboltError> {
+            Ok(())
+        }
         async fn list_networks(&self) -> Result<Vec<NetworkRow>, DockboltError> {
             Ok(vec![])
         }

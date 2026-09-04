@@ -4,6 +4,11 @@ import { ConfirmDialog } from "../components/ConfirmDialog";
 import { ResourceTile } from "../components/icons";
 import { StatusPill } from "../components/StatusPill";
 import { buttonClass } from "../lib/buttonClass";
+import {
+  canRestartContainer,
+  canStartContainer,
+  canStopContainer,
+} from "../lib/containerLifecycle";
 import { resourceStatusPill } from "../lib/statusPill";
 import { VirtualTable } from "../components/VirtualTable";
 import { fmtTime, shortId } from "../lib/format";
@@ -27,6 +32,7 @@ function deleteCopy(row: ContainerRow): { title: string; body: string } {
 
 type Dialog =
   | { kind: "delete"; title: string; body: string; id: string }
+  | { kind: "restart"; id: string; name: string }
   | { kind: "error"; body: string };
 
 export function Containers() {
@@ -49,6 +55,24 @@ export function Containers() {
     if (!selected || busy) return;
     const copy = deleteCopy(selected);
     setDialog({ kind: "delete", ...copy, id: selected.id });
+  }
+
+  async function runLifecycle(action: "start" | "stop" | "restart", id: string) {
+    setBusy(true);
+    try {
+      if (action === "start") await api.startContainer(id);
+      if (action === "stop") await api.stopContainer(id);
+      if (action === "restart") await api.restartContainer(id);
+      setDialog(null);
+      await reload();
+    } catch (err) {
+      if (ipcErrorCode(err) === "not_found") {
+        await reload();
+      }
+      setDialog({ kind: "error", body: ipcErrorMessage(err) });
+    } finally {
+      setBusy(false);
+    }
   }
 
   async function confirmDelete(id: string) {
@@ -139,6 +163,33 @@ export function Containers() {
         </button>
         <button
           type="button"
+          className={buttonClass("ghost")}
+          disabled={!canStartContainer(selected, connected, busy)}
+          onClick={() => selected && void runLifecycle("start", selected.id)}
+        >
+          Start
+        </button>
+        <button
+          type="button"
+          className={buttonClass("ghost")}
+          disabled={!canStopContainer(selected, connected, busy)}
+          onClick={() => selected && void runLifecycle("stop", selected.id)}
+        >
+          Stop
+        </button>
+        <button
+          type="button"
+          className={buttonClass("ghost")}
+          disabled={!canRestartContainer(selected, connected, busy)}
+          onClick={() => {
+            if (!selected || busy) return;
+            setDialog({ kind: "restart", id: selected.id, name: selected.name });
+          }}
+        >
+          Restart
+        </button>
+        <button
+          type="button"
           className={buttonClass("danger")}
           disabled={!connected || !selected || busy}
           onClick={() => void onDelete()}
@@ -155,6 +206,19 @@ export function Containers() {
         </button>
       </div>
       {body()}
+      {dialog?.kind === "restart" ? (
+        <ConfirmDialog
+          title="Restart container"
+          body={`Restart ${dialog.name}?`}
+          confirmLabel="Restart"
+          confirmVariant="primary"
+          confirmDisabled={busy}
+          onCancel={() => {
+            if (!busy) setDialog(null);
+          }}
+          onConfirm={() => void runLifecycle("restart", dialog.id)}
+        />
+      ) : null}
       {dialog?.kind === "delete" ? (
         <ConfirmDialog
           title={dialog.title}
