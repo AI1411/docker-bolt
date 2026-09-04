@@ -47,6 +47,32 @@ pub struct ContainerRow {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+pub struct InspectEnv {
+    pub name: String,
+    pub value: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+pub struct InspectMount {
+    pub source: String,
+    pub destination: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+pub struct ContainerInspect {
+    pub id: String,
+    pub name: String,
+    pub image: String,
+    pub state: String,
+    pub created: String,
+    pub ports: Vec<PublishedPort>,
+    pub mounts: Vec<InspectMount>,
+    pub networks: Vec<String>,
+    pub restart_policy: String,
+    pub env: Vec<InspectEnv>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub struct NetworkRow {
     pub id: String,
     pub name: String,

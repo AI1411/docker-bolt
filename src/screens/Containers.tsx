@@ -1,6 +1,7 @@
-import { useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { ConfirmDialog } from "../components/ConfirmDialog";
+import { InspectPane } from "../components/InspectPane";
 import { ListSearch } from "../components/ListSearch";
 import { ResourceTile } from "../components/icons";
 import { StatusPill } from "../components/StatusPill";
@@ -14,6 +15,7 @@ import { resourceStatusPill } from "../lib/statusPill";
 import { VirtualTable } from "../components/VirtualTable";
 import { fmtTime, shortId } from "../lib/format";
 import { filterByQuery, noMatchCopy } from "../lib/listFilter";
+import { closeInspectOnEscape, isTypingTarget } from "../lib/inspect";
 import {
   browserUrlForPort,
   publishedPortLabel,
@@ -115,6 +117,22 @@ export function Containers() {
   const connected = view.status === "connected";
   const [dialog, setDialog] = useState<Dialog | null>(null);
   const [busy, setBusy] = useState(false);
+
+  const onInspectNotFound = useCallback(() => {
+    select(null);
+    void reload();
+  }, [reload, select]);
+
+  useEffect(() => {
+    function onKey(event: KeyboardEvent) {
+      if (!closeInspectOnEscape(event.key, Boolean(dialog), isTypingTarget(event.target))) {
+        return;
+      }
+      select(null);
+    }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [dialog, select]);
 
   async function onDelete() {
     if (!selected || busy) return;
@@ -276,7 +294,16 @@ export function Containers() {
           Logs
         </button>
       </div>
-      {body()}
+      <div className={selected ? "screen-split" : "screen-body"}>
+        {body()}
+        {selected ? (
+          <InspectPane
+            containerId={selected.id}
+            onClose={() => select(null)}
+            onNotFound={onInspectNotFound}
+          />
+        ) : null}
+      </div>
       {dialog?.kind === "restart" ? (
         <ConfirmDialog
           title="Restart container"

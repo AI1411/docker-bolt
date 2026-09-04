@@ -4,12 +4,18 @@ use async_trait::async_trait;
 use futures::Stream;
 
 use crate::error::DockboltError;
-use crate::types::{ContainerRow, EngineEvent, ImageRow, NetworkRow, RawLogChunk, VolumeRow};
+use crate::types::{
+    ContainerInspect, ContainerRow, EngineEvent, ImageRow, NetworkRow, RawLogChunk, VolumeRow,
+};
 
 #[async_trait]
 pub trait DockerPort: Send + Sync {
     async fn version(&self) -> Result<String, DockboltError>;
     async fn list_containers(&self) -> Result<Vec<ContainerRow>, DockboltError>;
+    async fn inspect_container(&self, id: &str) -> Result<ContainerInspect, DockboltError> {
+        let _ = id;
+        Err(DockboltError::Internal("inspect not implemented".into()))
+    }
     async fn remove_container(&self, id: &str, force: bool) -> Result<(), DockboltError>;
     async fn start_container(&self, id: &str) -> Result<(), DockboltError>;
     async fn stop_container(&self, id: &str) -> Result<(), DockboltError>;

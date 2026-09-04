@@ -364,6 +364,75 @@ button.primary:not(:disabled):hover {
   padding: 48px 24px;
 }
 
+.screen-body {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.screen-split {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(280px, 340px);
+}
+
+.inspect-pane {
+  min-width: 0;
+  min-height: 0;
+  overflow: auto;
+  padding: 12px 16px 24px;
+  border-left: 1px solid var(--border);
+  background: var(--bg-toolbar);
+}
+
+.inspect-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.inspect-head h2 {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.inspect-dl {
+  display: grid;
+  grid-template-columns: 88px minmax(0, 1fr);
+  gap: 8px 12px;
+  margin: 0;
+  font-size: 12px;
+  line-height: 16px;
+}
+
+.inspect-dl dt {
+  color: var(--fg-muted);
+}
+
+.inspect-dl dd {
+  margin: 0;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.inspect-error {
+  color: var(--stderr);
+}
+
+.inspect-env-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+  color: var(--fg);
+  font-family: var(--font-text);
+}
+
 .empty p {
   margin: 0;
   max-width: 28rem;

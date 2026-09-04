@@ -8,6 +8,29 @@ export type PublishedPort = {
   protocol: string;
 };
 
+export type InspectEnv = {
+  name: string;
+  value: string;
+};
+
+export type InspectMount = {
+  source: string;
+  destination: string;
+};
+
+export type ContainerInspect = {
+  id: string;
+  name: string;
+  image: string;
+  state: string;
+  created: string;
+  ports: PublishedPort[];
+  mounts: InspectMount[];
+  networks: string[];
+  restart_policy: string;
+  env: InspectEnv[];
+};
+
 export type ContainerRow = {
   id: string;
   name: string;
@@ -104,6 +127,7 @@ export const api = {
   startContainer: (id: string) => invoke("start_container", { id }),
   stopContainer: (id: string) => invoke("stop_container", { id }),
   restartContainer: (id: string) => invoke("restart_container", { id }),
+  inspectContainer: (id: string) => invoke<ContainerInspect>("inspect_container", { id }),
   deleteImage: (id: string) => invoke("delete_image", { id }),
   deleteVolume: (name: string) => invoke("delete_volume", { name }),
   startComposeProject: (project: string) =>
