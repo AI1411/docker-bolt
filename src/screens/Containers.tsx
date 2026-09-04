@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { ConfirmDialog } from "../components/ConfirmDialog";
 import { InspectPane } from "../components/InspectPane";
@@ -12,10 +12,11 @@ import {
   canStopContainer,
 } from "../lib/containerLifecycle";
 import { resourceStatusPill } from "../lib/statusPill";
-import { VirtualTable } from "../components/VirtualTable";
+import { VirtualTable, type VirtualTableHandle } from "../components/VirtualTable";
 import { fmtTime, shortId } from "../lib/format";
 import { filterByQuery, noMatchCopy } from "../lib/listFilter";
-import { closeInspectOnEscape, isTypingTarget } from "../lib/inspect";
+import { listRowA11y } from "../lib/listKeys";
+import { useListKeyboard } from "../lib/useListKeyboard";
 import {
   browserUrlForPort,
   publishedPortLabel,
@@ -117,28 +118,34 @@ export function Containers() {
   const connected = view.status === "connected";
   const [dialog, setDialog] = useState<Dialog | null>(null);
   const [busy, setBusy] = useState(false);
+  const searchRef = useRef<HTMLInputElement>(null);
+  const tableRef = useRef<VirtualTableHandle>(null);
 
   const onInspectNotFound = useCallback(() => {
     select(null);
     void reload();
   }, [reload, select]);
 
-  useEffect(() => {
-    function onKey(event: KeyboardEvent) {
-      if (!closeInspectOnEscape(event.key, Boolean(dialog), isTypingTarget(event.target))) {
-        return;
-      }
-      select(null);
-    }
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [dialog, select]);
-
   async function onDelete() {
     if (!selected || busy) return;
     const copy = deleteCopy(selected);
     setDialog({ kind: "delete", ...copy, id: selected.id });
   }
+
+  useListKeyboard({
+    ids: visible.map((row) => row.id),
+    selectedId,
+    onSelect: select,
+    searchRef,
+    tableRef,
+    dialogOpen: Boolean(dialog),
+    allowLogs: true,
+    onLogs: () => {
+      const id = useContainers.getState().selectedId;
+      if (id) navigate(`/containers/${encodeURIComponent(id)}/logs`);
+    },
+    onDelete: () => void onDelete(),
+  });
 
   async function runLifecycle(action: "start" | "stop" | "restart", id: string) {
     setBusy(true);
@@ -205,6 +212,7 @@ export function Containers() {
     }
     return (
       <VirtualTable
+        ref={tableRef}
         count={visible.length}
         rowHeight={56}
         rowRenderer={(index) => {
@@ -213,6 +221,7 @@ export function Containers() {
             <div
               className={`row list-row ${row.id === selectedId ? "selected" : ""}`}
               data-cols="containers"
+              {...listRowA11y(row.id === selectedId)}
               onClick={() => select(row.id)}
             >
               <ResourceTile kind={resourceIconKind(row.image)} running={row.running} />
@@ -241,7 +250,7 @@ export function Containers() {
     <div className="screen">
       <div className="toolbar">
         <span className="toolbar-title">Containers</span>
-        <ListSearch value={query} onChange={setQuery} label="Filter containers" />
+        <ListSearch ref={searchRef} value={query} onChange={setQuery} label="Filter containers" />
         <button
           type="button"
           className={buttonClass("ghost")}

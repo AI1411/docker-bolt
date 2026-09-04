@@ -1,30 +1,39 @@
-import { useLayoutEffect, useRef, type ReactNode, type UIEvent } from "react";
+import { useLayoutEffect, useRef, useImperativeHandle, forwardRef, type ReactNode, type UIEvent } from "react";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { isPinnedToBottom } from "../lib/scroll";
 
-export function VirtualTable({
-  count,
-  rowHeight = 40,
-  rowRenderer,
-  header,
-  follow = false,
-}: {
-  count: number;
-  rowHeight?: number;
-  rowRenderer: (index: number) => ReactNode;
-  header?: ReactNode;
-  follow?: boolean;
-}) {
+export type VirtualTableHandle = {
+  scrollToIndex: (index: number) => void;
+};
+
+export const VirtualTable = forwardRef<
+  VirtualTableHandle,
+  {
+    count: number;
+    rowHeight?: number;
+    rowRenderer: (index: number) => ReactNode;
+    header?: ReactNode;
+    follow?: boolean;
+  }
+>(function VirtualTable({ count, rowHeight = 40, rowRenderer, header, follow = false }, ref) {
   const parentRef = useRef<HTMLDivElement>(null);
   const pinToBottom = useRef(true);
-  // TanStack Virtual returns unmemoizable functions; React Compiler skips this hook.
-  // eslint-disable-next-line react-hooks/incompatible-library
   const virtualizer = useVirtualizer({
     count,
     getScrollElement: () => parentRef.current,
     estimateSize: () => rowHeight,
     overscan: 12,
   });
+
+  useImperativeHandle(
+    ref,
+    () => ({
+      scrollToIndex: (index: number) => {
+        virtualizer.scrollToIndex(index, { align: "center" });
+      },
+    }),
+    [virtualizer],
+  );
 
   if (count === 0) pinToBottom.current = true;
 
@@ -42,7 +51,7 @@ export function VirtualTable({
   }
 
   return (
-    <div className="vtable">
+    <div className="vtable" role="grid">
       {header ? <div className="vtable-head">{header}</div> : null}
       <div className="vtable-body" ref={parentRef} onScroll={onScroll}>
         <div
@@ -53,6 +62,7 @@ export function VirtualTable({
             <div
               key={item.key}
               className="vtable-row-abs"
+              role="presentation"
               style={{
                 height: `${item.size}px`,
                 transform: `translateY(${item.start}px)`,
@@ -65,4 +75,4 @@ export function VirtualTable({
       </div>
     </div>
   );
-}
+});

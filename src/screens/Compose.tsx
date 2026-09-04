@@ -1,12 +1,14 @@
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { ConfirmDialog } from "../components/ConfirmDialog";
 import { ListSearch } from "../components/ListSearch";
 import { ResourceTile } from "../components/icons";
 import { StatusPill } from "../components/StatusPill";
 import { buttonClass } from "../lib/buttonClass";
 import { filterByQuery, noMatchCopy } from "../lib/listFilter";
+import { listRowA11y } from "../lib/listKeys";
 import { resourceStatusPill } from "../lib/statusPill";
-import { VirtualTable } from "../components/VirtualTable";
+import { useListKeyboard } from "../lib/useListKeyboard";
+import { VirtualTable, type VirtualTableHandle } from "../components/VirtualTable";
 import { api, ipcErrorMessage } from "../lib/tauri";
 import { useCompose } from "../stores/compose";
 import { useConnection } from "../stores/connection";
@@ -33,6 +35,26 @@ export function Compose() {
   const connected = view.status === "connected";
   const [dialog, setDialog] = useState<Dialog | null>(null);
   const [busy, setBusy] = useState(false);
+  const searchRef = useRef<HTMLInputElement>(null);
+  const tableRef = useRef<VirtualTableHandle>(null);
+
+  useListKeyboard({
+    ids: visible.map((row) => row.project),
+    selectedId: selectedProject,
+    onSelect: select,
+    searchRef,
+    tableRef,
+    dialogOpen: Boolean(dialog),
+    onDelete: () => {
+      const row = useCompose.getState().rows.find((item) => item.project === useCompose.getState().selectedProject);
+      if (!row || busy) return;
+      setDialog({
+        kind: "down",
+        project: row.project,
+        body: `${row.project} will remove ${row.container_count} container(s) and project networks. Named volumes are kept. You cannot start this project again from DockBolt.`,
+      });
+    },
+  });
 
   async function runCommand(command: (project: string) => Promise<unknown>, project: string) {
     setBusy(true);
@@ -78,6 +100,7 @@ export function Compose() {
     }
     return (
       <VirtualTable
+        ref={tableRef}
         count={visible.length}
         rowHeight={56}
         rowRenderer={(index) => {
@@ -86,6 +109,7 @@ export function Compose() {
             <div
               className={`row list-row ${row.project === selectedProject ? "selected" : ""}`}
               data-cols="compose"
+              {...listRowA11y(row.project === selectedProject)}
               onClick={() => select(row.project)}
             >
               <ResourceTile kind="compose" running={row.status === "running"} />
@@ -113,7 +137,7 @@ export function Compose() {
     <div className="screen">
       <div className="toolbar">
         <span className="toolbar-title">Compose</span>
-        <ListSearch value={query} onChange={setQuery} label="Filter compose projects" />
+        <ListSearch ref={searchRef} value={query} onChange={setQuery} label="Filter compose projects" />
         <button
           type="button"
           className={buttonClass("ghost")}

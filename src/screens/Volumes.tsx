@@ -1,10 +1,12 @@
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { ConfirmDialog } from "../components/ConfirmDialog";
 import { ListSearch } from "../components/ListSearch";
 import { ResourceTile } from "../components/icons";
 import { buttonClass } from "../lib/buttonClass";
 import { filterByQuery, noMatchCopy } from "../lib/listFilter";
-import { VirtualTable } from "../components/VirtualTable";
+import { listRowA11y } from "../lib/listKeys";
+import { useListKeyboard } from "../lib/useListKeyboard";
+import { VirtualTable, type VirtualTableHandle } from "../components/VirtualTable";
 import { api, ipcErrorCode, ipcErrorMessage } from "../lib/tauri";
 import { useConnection } from "../stores/connection";
 import { useVolumes } from "../stores/volumes";
@@ -32,6 +34,27 @@ export function Volumes() {
   const connected = view.status === "connected";
   const [dialog, setDialog] = useState<Dialog | null>(null);
   const [busy, setBusy] = useState(false);
+  const searchRef = useRef<HTMLInputElement>(null);
+  const tableRef = useRef<VirtualTableHandle>(null);
+
+  useListKeyboard({
+    ids: visible.map((row) => row.name),
+    selectedId: selectedName,
+    onSelect: select,
+    searchRef,
+    tableRef,
+    dialogOpen: Boolean(dialog),
+    onDelete: () => {
+      const row = useVolumes.getState().rows.find((item) => item.name === useVolumes.getState().selectedName);
+      if (!row || busy) return;
+      setDialog({
+        kind: "delete",
+        title: "Delete volume",
+        body: `Delete volume ${row.name}?`,
+        name: row.name,
+      });
+    },
+  });
 
   async function confirmDelete(name: string) {
     setBusy(true);
@@ -80,6 +103,7 @@ export function Volumes() {
     }
     return (
       <VirtualTable
+        ref={tableRef}
         count={visible.length}
         rowHeight={56}
         rowRenderer={(index) => {
@@ -88,6 +112,7 @@ export function Volumes() {
             <div
               className={`row list-row ${row.name === selectedName ? "selected" : ""}`}
               data-cols="volumes"
+              {...listRowA11y(row.name === selectedName)}
               onClick={() => select(row.name)}
             >
               <ResourceTile kind="volume" />
@@ -108,7 +133,7 @@ export function Volumes() {
     <div className="screen">
       <div className="toolbar">
         <span className="toolbar-title">Volumes</span>
-        <ListSearch value={query} onChange={setQuery} label="Filter volumes" />
+        <ListSearch ref={searchRef} value={query} onChange={setQuery} label="Filter volumes" />
         <button
           type="button"
           className={buttonClass("ghost")}
