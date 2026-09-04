@@ -28,11 +28,15 @@ type LogsState = {
   lines: LogLine[];
   query: string;
   streamFilter: StreamFilter;
+  paused: boolean;
+  regex: boolean;
   omitted: number;
   endedReason: LogEndedReason | null;
   error: string | null;
   setQuery: (query: string) => void;
   setStreamFilter: (streamFilter: StreamFilter) => void;
+  setPaused: (paused: boolean) => void;
+  setRegex: (regex: boolean) => void;
   clearFilters: () => void;
   pushBatch: (lines: LogLine[], omitted: number) => void;
   start: (containerId: string) => Promise<void>;
@@ -68,17 +72,24 @@ export const useLogs = create<LogsState>((set, get) => ({
   lines: [],
   query: "",
   streamFilter: "all",
+  paused: false,
+  regex: false,
   omitted: 0,
   endedReason: null,
   error: null,
   setQuery: (query) => set({ query }),
   setStreamFilter: (streamFilter) => set({ streamFilter }),
+  setPaused: (paused) => set({ paused }),
+  setRegex: (regex) => set({ regex }),
   clearFilters: () => set({ query: "", streamFilter: "all" }),
   pushBatch: (lines, omitted) =>
-    set((state) => ({
-      lines: applyBatch(state.lines, lines),
-      omitted: state.omitted + omitted,
-    })),
+    set((state) => {
+      if (state.paused) return {};
+      return {
+        lines: applyBatch(state.lines, lines),
+        omitted: state.omitted + omitted,
+      };
+    }),
   start: async (containerId) => {
     await get().stop();
     const generation = ++startGeneration;
@@ -89,6 +100,7 @@ export const useLogs = create<LogsState>((set, get) => ({
       omitted: 0,
       endedReason: null,
       error: null,
+      paused: false,
     });
     const queuedBatches: LogsBatch[] = [];
     const queuedEnded: LogsEnded[] = [];
@@ -193,6 +205,8 @@ export const useLogs = create<LogsState>((set, get) => ({
       lines: [],
       query: "",
       streamFilter: "all",
+      paused: false,
+      regex: false,
       omitted: 0,
       endedReason: null,
       error: null,
