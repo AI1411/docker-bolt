@@ -175,6 +175,21 @@ button.primary:not(:disabled):hover {
   letter-spacing: 0.231px;
   padding: 8px 16px 16px;
   color: var(--fg);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.nav-label {
+  flex: 1;
+  min-width: 0;
+}
+
+.nav-count {
+  color: var(--fg-muted);
+  font-size: 12px;
+  line-height: 12px;
+  letter-spacing: normal;
 }
 
 .nav {

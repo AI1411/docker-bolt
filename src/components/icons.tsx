@@ -42,6 +42,14 @@ function strokeProps(className?: string) {
   };
 }
 
+export function IconBolt(props: IconProps) {
+  return (
+    <svg {...strokeProps(props.className)} width={20} height={20} viewBox="0 0 16 16">
+      <path d="M9 1.5 3.5 9h4L7 14.5 12.5 7h-4L9 1.5z" />
+    </svg>
+  );
+}
+
 export function IconContainers(props: IconProps) {
   return (
     <svg {...strokeProps(props.className)}>
