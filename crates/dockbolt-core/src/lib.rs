@@ -8,6 +8,7 @@ pub mod events;
 pub mod images;
 pub mod inspect;
 pub mod logs;
+pub mod networks;
 pub mod ports;
 pub mod prune;
 pub mod types;
@@ -336,7 +337,7 @@ mod event_tests {
         );
         assert_eq!(
             resources_from_docker_type("network"),
-            vec![ResourceKind::Compose]
+            vec![ResourceKind::Networks, ResourceKind::Compose]
         );
         assert_eq!(
             resources_from_docker_type("plugin"),

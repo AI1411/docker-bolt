@@ -307,6 +307,8 @@ impl DockerPort for BollardDocker {
                 NetworkRow {
                     id: n.id.unwrap_or_default(),
                     name: n.name.unwrap_or_default(),
+                    driver: n.driver.unwrap_or_default(),
+                    scope: n.scope.unwrap_or_default(),
                     compose_project: labels
                         .get("com.docker.compose.project")
                         .cloned()

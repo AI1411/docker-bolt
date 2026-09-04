@@ -209,6 +209,8 @@ mod grouping_tests {
         NetworkRow {
             id: id.into(),
             name: name.into(),
+            driver: String::new(),
+            scope: String::new(),
             compose_project: project.map(str::to_string),
         }
     }

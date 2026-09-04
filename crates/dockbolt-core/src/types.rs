@@ -6,6 +6,7 @@ pub enum ResourceKind {
     Containers,
     Images,
     Volumes,
+    Networks,
     Compose,
 }
 
@@ -15,6 +16,7 @@ impl ResourceKind {
             Self::Containers => "containers",
             Self::Images => "images",
             Self::Volumes => "volumes",
+            Self::Networks => "networks",
             Self::Compose => "compose",
         }
     }
@@ -76,6 +78,10 @@ pub struct ContainerInspect {
 pub struct NetworkRow {
     pub id: String,
     pub name: String,
+    #[serde(default)]
+    pub driver: String,
+    #[serde(default)]
+    pub scope: String,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub compose_project: Option<String>,
 }

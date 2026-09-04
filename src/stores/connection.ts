@@ -13,6 +13,7 @@ import { useCompose } from "./compose";
 import { useContainers } from "./containers";
 import { useImages } from "./images";
 import { useLogs } from "./logs";
+import { useNetworks } from "./networks";
 import { useVolumes } from "./volumes";
 
 type ConnectionState = {
@@ -30,6 +31,7 @@ function clearLists() {
   useContainers.getState().clear();
   useImages.getState().clear();
   useVolumes.getState().clear();
+  useNetworks.getState().clear();
   useLogs.getState().reset();
 }
 
@@ -37,6 +39,7 @@ function applyRefreshAll(data: RefreshAll) {
   useContainers.getState().setRows(data.containers);
   useImages.getState().setRows(data.images);
   useVolumes.getState().setRows(data.volumes);
+  if (data.networks) useNetworks.getState().setRows(data.networks);
 }
 
 async function reloadAll() {
@@ -57,6 +60,7 @@ export const useConnection = create<ConnectionState>((set, get) => ({
         void useContainers.getState().reload();
         void useImages.getState().reload();
         void useVolumes.getState().reload();
+        void useNetworks.getState().reload();
       });
       void useCompose.getState().reload();
     }

@@ -51,6 +51,13 @@ export type ImageRow = {
   in_use: boolean;
 };
 export type VolumeRow = { name: string; driver: string };
+export type NetworkRow = {
+  id: string;
+  name: string;
+  driver?: string;
+  scope?: string;
+  compose_project?: string;
+};
 export type PrunePreview = {
   stopped_containers: number;
   dangling_images: number;
@@ -97,7 +104,7 @@ export function shouldApplyConnectionSnapshot(
   return !(snapshot.status === "connecting" && current.status !== "connecting");
 }
 
-export type ResourceName = "containers" | "images" | "volumes" | "compose";
+export type ResourceName = "containers" | "images" | "volumes" | "networks" | "compose";
 export type RefreshResourceName = Exclude<ResourceName, "compose">;
 
 export type LogLine = {
@@ -124,6 +131,7 @@ export type RefreshAll = {
   containers: ContainerRow[];
   images: ImageRow[];
   volumes: VolumeRow[];
+  networks?: NetworkRow[];
 };
 
 export const api = {
@@ -134,6 +142,7 @@ export const api = {
   listContainers: () => invoke<ContainerRow[]>("list_containers"),
   listImages: () => invoke<ImageRow[]>("list_images"),
   listVolumes: () => invoke<VolumeRow[]>("list_volumes"),
+  listNetworks: () => invoke<NetworkRow[]>("list_networks"),
   listComposeProjects: () => invoke<ComposeProjectRow[]>("list_compose_projects"),
   deleteContainer: (id: string) => invoke("delete_container", { id }),
   startContainer: (id: string) => invoke("start_container", { id }),
@@ -142,6 +151,7 @@ export const api = {
   inspectContainer: (id: string) => invoke<ContainerInspect>("inspect_container", { id }),
   deleteImage: (id: string) => invoke("delete_image", { id }),
   deleteVolume: (name: string) => invoke("delete_volume", { name }),
+  deleteNetwork: (id: string) => invoke("delete_network", { id }),
   startComposeProject: (project: string) =>
     invoke("start_compose_project", { project }),
   stopComposeProject: (project: string) =>
@@ -151,7 +161,7 @@ export const api = {
   prunePreview: () => invoke<PrunePreview>("prune_preview"),
   pruneNow: () => invoke<PruneReport>("prune_now"),
   refresh: (resource: RefreshResourceName | "all") =>
-    invoke<RefreshAll | ContainerRow[] | ImageRow[] | VolumeRow[]>("refresh", {
+    invoke<RefreshAll | ContainerRow[] | ImageRow[] | VolumeRow[] | NetworkRow[]>("refresh", {
       resource,
     }),
   startLogs: (container_id: string) =>

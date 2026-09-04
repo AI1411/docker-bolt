@@ -87,6 +87,17 @@ export function IconVolumes(props: IconProps) {
   );
 }
 
+export function IconNetworks(props: IconProps) {
+  return (
+    <svg {...strokeProps(props.className)}>
+      <circle cx="4" cy="8" r="2" />
+      <circle cx="12" cy="4.5" r="2" />
+      <circle cx="12" cy="11.5" r="2" />
+      <path d="M6 8h4M10.2 5.6 6 7.2M10.2 10.4 6 8.8" />
+    </svg>
+  );
+}
+
 const BRAND: Record<ResourceIconKind, SimpleIcon | null> = {
   mysql: siMysql,
   mariadb: siMariadb,
@@ -144,7 +155,7 @@ export function ResourceTile({
   kind,
   running,
 }: {
-  kind: ResourceIconKind | "compose" | "volume" | "image";
+  kind: ResourceIconKind | "compose" | "volume" | "image" | "network";
   running?: boolean;
 }) {
   const extra =
@@ -152,6 +163,8 @@ export function ResourceTile({
       ? siDocker
       : kind === "volume"
         ? null
+        : kind === "network"
+          ? null
         : kind === "image"
           ? siDocker
           : BRAND[kind];
@@ -160,10 +173,12 @@ export function ResourceTile({
       ? tileBackground(extra.hex)
       : kind === "volume"
         ? "#8e8e93"
+        : kind === "network"
+          ? "#636366"
         : "#5b6abf";
   return (
     <span className="resource-tile" style={{ background: bg }} title={extra?.title ?? kind}>
-      {extra ? <BrandMark icon={extra} /> : <span className="resource-tile-label">{kind === "volume" ? "Vol" : "Ct"}</span>}
+      {extra ? <BrandMark icon={extra} /> : <span className="resource-tile-label">{kind === "volume" ? "Vol" : kind === "network" ? "Net" : "Ct"}</span>}
       {running === undefined ? null : (
         <span className={`resource-dot${running ? " running" : ""}`} />
       )}
