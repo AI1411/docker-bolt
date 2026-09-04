@@ -159,6 +159,8 @@ export const api = {
     invoke("stop_compose_project", { project }),
   downComposeProject: (project: string) =>
     invoke("down_compose_project", { project }),
+  pickComposeFile: () => invoke<{ path: string | null }>("pick_compose_file"),
+  upComposeFile: (path: string) => invoke("up_compose_file", { path }),
   prunePreview: () => invoke<PrunePreview>("prune_preview"),
   pruneNow: () => invoke<PruneReport>("prune_now"),
   refresh: (resource: RefreshResourceName | "all") =>

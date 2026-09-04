@@ -1,3 +1,4 @@
+use std::path::PathBuf;
 use std::pin::Pin;
 use std::sync::Arc;
 use std::task::{Context, Poll};
@@ -81,6 +82,17 @@ pub struct NameArg {
 #[serde(rename_all = "snake_case")]
 pub struct ProjectArg {
     pub project: String,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub struct PathArg {
+    pub path: String,
+}
+
+#[derive(Debug, Serialize)]
+pub struct PickComposeReply {
+    pub path: Option<String>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -617,6 +629,63 @@ async fn down_compose_project(
 }
 
 #[tauri::command(rename_all = "snake_case")]
+async fn pick_compose_file() -> Result<PickComposeReply, IpcError> {
+    let picked = tauri::async_runtime::spawn_blocking(|| {
+        rfd::FileDialog::new()
+            .add_filter("Compose", &["yml", "yaml"])
+            .set_title("Open Compose file")
+            .pick_file()
+    })
+    .await
+    .map_err(|err| ipc_internal(err.to_string()))?;
+    Ok(PickComposeReply {
+        path: picked.map(|path| path.to_string_lossy().into_owned()),
+    })
+}
+
+#[tauri::command(rename_all = "snake_case")]
+async fn up_compose_file(state: State<'_, AppState>, path: String) -> Result<OkReply, IpcError> {
+    let PathArg { path } = PathArg { path };
+    let file = PathBuf::from(&path);
+    if !dockbolt_core::compose_file::is_compose_path(&file) {
+        return Err(ipc_internal("Choose a .yml or .yaml Compose file"));
+    }
+    let contents = tokio::fs::read_to_string(&file)
+        .await
+        .map_err(|err| ipc_internal(err.to_string()))?;
+    let project = dockbolt_core::compose_file::compose_project_name(&file, &contents);
+    let docker_host = {
+        let inner = state.inner.lock().await;
+        match &inner.connection {
+            ConnectionView::Connected { endpoint, .. } => endpoint.clone(),
+            _ => {
+                return Err(IpcError {
+                    code: "engine_unreachable".into(),
+                    message: "Connect to a Docker engine first".into(),
+                });
+            }
+        }
+    };
+    let output = tokio::process::Command::new("docker")
+        .args(["compose", "-p", &project, "-f", &path, "up", "-d"])
+        .env("DOCKER_HOST", docker_host)
+        .output()
+        .await
+        .map_err(|err| ipc_internal(format!("docker compose: {err}")))?;
+    if !output.status.success() {
+        let stderr = String::from_utf8_lossy(&output.stderr);
+        let stdout = String::from_utf8_lossy(&output.stdout);
+        let message = if !stderr.trim().is_empty() {
+            stderr
+        } else {
+            stdout
+        };
+        return Err(ipc_internal(message.trim().to_string()));
+    }
+    Ok(OkReply { ok: true })
+}
+
+#[tauri::command(rename_all = "snake_case")]
 async fn delete_container(state: State<'_, AppState>, id: String) -> Result<OkReply, IpcError> {
     let IdArg { id } = IdArg { id };
     let docker = docker_from_state(&state).await?;
@@ -945,6 +1014,8 @@ pub fn run() {
             start_compose_project,
             stop_compose_project,
             down_compose_project,
+            pick_compose_file,
+            up_compose_file,
             delete_container,
             start_container,
             stop_container,
