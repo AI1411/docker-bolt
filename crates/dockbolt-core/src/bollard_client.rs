@@ -201,8 +201,9 @@ impl DockerPort for BollardDocker {
             .map(|m| InspectMount {
                 source: m.source.unwrap_or_default(),
                 destination: m.destination.unwrap_or_default(),
+                name: m.name.unwrap_or_default(),
             })
-            .filter(|m| !m.source.is_empty() || !m.destination.is_empty())
+            .filter(|m| !m.source.is_empty() || !m.destination.is_empty() || !m.name.is_empty())
             .collect();
         let networks = info
             .network_settings
@@ -374,6 +375,7 @@ impl DockerPort for BollardDocker {
             .map(|v| VolumeRow {
                 name: v.name,
                 driver: v.driver,
+                in_use: true,
             })
             .collect())
     }

@@ -58,6 +58,8 @@ pub struct InspectEnv {
 pub struct InspectMount {
     pub source: String,
     pub destination: String,
+    #[serde(default)]
+    pub name: String,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
@@ -140,6 +142,12 @@ pub struct PruneReport {
 pub struct VolumeRow {
     pub name: String,
     pub driver: String,
+    #[serde(default = "default_volume_in_use")]
+    pub in_use: bool,
+}
+
+fn default_volume_in_use() -> bool {
+    true
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]

@@ -541,7 +541,7 @@ button.primary:not(:disabled):hover {
 }
 
 .row[data-cols="volumes"] {
-  grid-template-columns: 40px minmax(140px, 2fr);
+  grid-template-columns: 28px 40px minmax(140px, 2fr) 36px;
 }
 
 .row[data-cols="networks"] {
@@ -613,7 +613,7 @@ button.primary:not(:disabled):hover {
 }
 
 .row[data-cols="volumes"] {
-  grid-template-columns: 40px minmax(140px, 2fr);
+  grid-template-columns: 28px 40px minmax(140px, 2fr) 36px;
 }
 
 .cell {

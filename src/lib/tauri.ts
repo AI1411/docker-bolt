@@ -16,6 +16,7 @@ export type InspectEnv = {
 export type InspectMount = {
   source: string;
   destination: string;
+  name?: string;
 };
 
 export type ContainerInspect = {
@@ -50,7 +51,7 @@ export type ImageRow = {
   created_unix: number;
   in_use: boolean;
 };
-export type VolumeRow = { name: string; driver: string };
+export type VolumeRow = { name: string; driver: string; in_use?: boolean };
 export type NetworkRow = {
   id: string;
   name: string;
