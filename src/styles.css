@@ -524,12 +524,46 @@ button.primary:not(:disabled):hover {
   grid-column: 2 / -1;
 }
 
+.row.section[data-cols="containers"] .cell.section-title {
+  grid-column: 1 / -1;
+}
+
 .row.list-row {
   height: 56px;
 }
 
 .row[data-cols="containers"] {
-  grid-template-columns: 40px minmax(120px, 1.6fr) 108px minmax(72px, 1fr) 108px 132px;
+  grid-template-columns: 20px 40px minmax(120px, 1.6fr) minmax(72px, 1fr) 72px;
+}
+
+.row.nested[data-cols="containers"] {
+  padding-left: 28px;
+}
+
+.tree-toggle,
+.tree-spacer {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 32px;
+  padding: 0;
+  color: var(--fg-muted);
+  background: transparent;
+  border: none;
+}
+
+.tree-toggle:not(:disabled) {
+  cursor: pointer;
+}
+
+.tree-chevron {
+  display: block;
+  transition: transform 120ms ease;
+}
+
+.tree-chevron.open {
+  transform: rotate(90deg);
 }
 
 .row[data-cols="compose"] {

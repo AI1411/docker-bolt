@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import { composeProjectName, parseProjectSelection } from "../lib/containerGroups";
 import { api, ipcErrorMessage, type ContainerRow } from "../lib/tauri";
 
 type ContainersState = {
@@ -20,11 +21,15 @@ export const useContainers = create<ContainersState>((set, get) => ({
   selectedId: null,
   setRows: (rows) => {
     const selectedId = get().selectedId;
+    const project = parseProjectSelection(selectedId);
+    const stillThere = project
+      ? rows.some((row) => composeProjectName(row) === project)
+      : Boolean(selectedId && rows.some((row) => row.id === selectedId));
     set({
       rows,
       loading: false,
       error: null,
-      selectedId: selectedId && rows.some((row) => row.id === selectedId) ? selectedId : null,
+      selectedId: stillThere ? selectedId : null,
     });
   },
   clear: () => set({ rows: [], loading: false, error: null, selectedId: null }),

@@ -46,7 +46,10 @@ export default function App() {
         if (resource === "images") void useImages.getState().reload();
         if (resource === "volumes") void useVolumes.getState().reload();
         if (resource === "networks") void useNetworks.getState().reload();
-        if (resource === "compose") void useCompose.getState().reload();
+        if (resource === "compose") {
+          void useCompose.getState().reload();
+          void useContainers.getState().reload();
+        }
       });
       if (cancelled) {
         unlistenConnection();

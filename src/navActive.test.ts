@@ -4,7 +4,7 @@ import { containersNavActive, navCount } from "./lib/navActive";
 test("Containers stays active on the logs route", () => {
   expect(containersNavActive("/")).toBe(true);
   expect(containersNavActive("/containers/abc/logs")).toBe(true);
-  expect(containersNavActive("/compose")).toBe(false);
+  expect(containersNavActive("/compose")).toBe(true);
   expect(containersNavActive("/images")).toBe(false);
 });
 
