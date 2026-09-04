@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { ConfirmDialog } from "../components/ConfirmDialog";
+import { ResourceTile } from "../components/icons";
 import { VirtualTable } from "../components/VirtualTable";
 import { api, ipcErrorCode, ipcErrorMessage } from "../lib/tauri";
 import { useConnection } from "../stores/connection";
@@ -68,25 +69,22 @@ export function Volumes() {
     return (
       <VirtualTable
         count={rows.length}
-        rowHeight={32}
-        header={
-          <div className="row head" data-cols="volumes">
-            <span className="cell">Name</span>
-            <span className="cell">Driver</span>
-          </div>
-        }
+        rowHeight={56}
         rowRenderer={(index) => {
           const row = rows[index];
           return (
             <div
-              className={`row ${row.name === selectedName ? "selected" : ""}`}
+              className={`row list-row ${row.name === selectedName ? "selected" : ""}`}
               data-cols="volumes"
               onClick={() => select(row.name)}
             >
-              <span className="cell" title={row.name}>
-                {row.name}
+              <ResourceTile kind="volume" />
+              <span className="cell-stack">
+                <span className="cell-primary" title={row.name}>
+                  {row.name}
+                </span>
+                <span className="cell-secondary">{row.driver}</span>
               </span>
-              <span className="cell">{row.driver}</span>
             </div>
           );
         }}

@@ -71,7 +71,7 @@ export function Logs() {
         <input
           className="log-search"
           value={query}
-          placeholder="Search logs..."
+          placeholder="Search logs…"
           onChange={(event) => setQuery(event.target.value)}
         />
         <select
@@ -90,7 +90,7 @@ export function Logs() {
       <VirtualTable
         follow
         count={filtered.length}
-        rowHeight={22}
+        rowHeight={25}
         rowRenderer={(index) => {
           const line = filtered[index];
           return (

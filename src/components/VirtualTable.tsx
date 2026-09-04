@@ -4,7 +4,7 @@ import { isPinnedToBottom } from "../lib/scroll";
 
 export function VirtualTable({
   count,
-  rowHeight = 32,
+  rowHeight = 40,
   rowRenderer,
   header,
   follow = false,

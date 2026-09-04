@@ -1,8 +1,10 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { ConfirmDialog } from "../components/ConfirmDialog";
+import { ResourceTile } from "../components/icons";
 import { VirtualTable } from "../components/VirtualTable";
 import { fmtTime, shortId } from "../lib/format";
+import { resourceIconKind } from "../lib/resourceIcon";
 import { api, ipcErrorCode, ipcErrorMessage, type ContainerRow } from "../lib/tauri";
 import { useConnection } from "../stores/connection";
 import { useContainers } from "../stores/containers";
@@ -90,33 +92,27 @@ export function Containers() {
     return (
       <VirtualTable
         count={rows.length}
-        rowHeight={32}
-        header={
-          <div className="row head" data-cols="containers">
-            <span className="cell">Name</span>
-            <span className="cell">Image</span>
-            <span className="cell">State</span>
-            <span className="cell">ID</span>
-            <span className="cell">Created</span>
-          </div>
-        }
+        rowHeight={56}
         rowRenderer={(index) => {
           const row = rows[index];
           return (
             <div
-              className={`row ${row.id === selectedId ? "selected" : ""}`}
+              className={`row list-row ${row.id === selectedId ? "selected" : ""}`}
               data-cols="containers"
               onClick={() => select(row.id)}
             >
-              <span className="cell" title={row.name}>
-                {row.name}
+              <ResourceTile kind={resourceIconKind(row.image)} running={row.running} />
+              <span className="cell-stack">
+                <span className="cell-primary" title={row.name}>
+                  {row.name}
+                </span>
+                <span className="cell-secondary" title={row.image}>
+                  {row.image}
+                </span>
               </span>
-              <span className="cell" title={row.image}>
-                {row.image}
-              </span>
-              <span className="cell">{row.state}</span>
-              <span className="cell mono">{shortId(row.id)}</span>
-              <span className="cell">{fmtTime(row.created_unix)}</span>
+              <span className="cell muted">{row.state}</span>
+              <span className="cell mono muted">{shortId(row.id)}</span>
+              <span className="cell muted">{fmtTime(row.created_unix)}</span>
             </div>
           );
         }}
