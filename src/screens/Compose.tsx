@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { ConfirmDialog } from "../components/ConfirmDialog";
+import { ResourceTile } from "../components/icons";
 import { VirtualTable } from "../components/VirtualTable";
 import { api, ipcErrorMessage } from "../lib/tauri";
 import { useCompose } from "../stores/compose";
@@ -64,31 +65,25 @@ export function Compose() {
     return (
       <VirtualTable
         count={rows.length}
-        rowHeight={32}
-        header={
-          <div className="row head" data-cols="compose">
-            <span className="cell">Name</span>
-            <span className="cell">Status</span>
-            <span className="cell">Services</span>
-            <span className="cell">Containers</span>
-          </div>
-        }
+        rowHeight={56}
         rowRenderer={(index) => {
           const row = rows[index];
           return (
             <div
-              className={`row ${row.project === selectedProject ? "selected" : ""}`}
+              className={`row list-row ${row.project === selectedProject ? "selected" : ""}`}
               data-cols="compose"
               onClick={() => select(row.project)}
             >
-              <span className="cell" title={row.project}>
-                {row.project}
+              <ResourceTile kind="compose" running={row.status === "running"} />
+              <span className="cell-stack">
+                <span className="cell-primary" title={row.project}>
+                  {row.project}
+                </span>
+                <span className="cell-secondary">
+                  {row.service_count} services · {row.running_count}/{row.container_count} containers
+                </span>
               </span>
-              <span className="cell">{row.status}</span>
-              <span className="cell">{row.service_count}</span>
-              <span className="cell">
-                {row.running_count}/{row.container_count}
-              </span>
+              <span className="cell muted">{row.status}</span>
             </div>
           );
         }}

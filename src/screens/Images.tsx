@@ -1,7 +1,9 @@
 import { useMemo, useRef, useState } from "react";
 import { ConfirmDialog } from "../components/ConfirmDialog";
+import { ResourceTile } from "../components/icons";
 import { VirtualTable } from "../components/VirtualTable";
 import { fmtBytes, fmtTime, shortId } from "../lib/format";
+import { resourceIconKind } from "../lib/resourceIcon";
 import {
   buildImageTableItems,
   rangeIds,
@@ -140,9 +142,10 @@ export function Images() {
     return (
       <VirtualTable
         count={items.length}
-        rowHeight={32}
+        rowHeight={56}
         header={
           <div className="row head" data-cols="images">
+            <span className="cell" />
             <span className="cell" />
             <span className="cell">Tags</span>
             <span className="cell">ID</span>
@@ -208,6 +211,7 @@ export function Images() {
                   />
                 ) : null}
               </span>
+              <ResourceTile kind={resourceIconKind(tags)} />
               <span className="cell" title={tags}>
                 {tags}
               </span>
