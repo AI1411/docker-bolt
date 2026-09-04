@@ -39,6 +39,20 @@ async function waitFor(assert: () => void) {
   throw last;
 }
 
+test("paused drops incoming batches until resume", async () => {
+  const { useLogs } = await import("./logs");
+  useLogs.setState({
+    paused: true,
+    lines: [{ seq: 1, stream: "stdout", raw: "keep" }],
+  });
+  useLogs.getState().pushBatch([{ seq: 2, stream: "stdout", raw: "new" }], 3);
+  expect(useLogs.getState().lines.map((l) => l.seq)).toEqual([1]);
+  expect(useLogs.getState().omitted).toBe(0);
+  useLogs.getState().setPaused(false);
+  useLogs.getState().pushBatch([{ seq: 2, stream: "stdout", raw: "new" }], 0);
+  expect(useLogs.getState().lines.map((l) => l.seq)).toEqual([1, 2]);
+});
+
 test("drops oldest past 20000", () => {
   const current: LogLine[] = Array.from({ length: 19998 }, (_, i) => ({
     seq: i,
@@ -75,6 +89,8 @@ afterEach(async () => {
     error: null,
     query: "",
     streamFilter: "all",
+    paused: false,
+    regex: false,
   });
   vi.clearAllMocks();
   stopLogs.mockResolvedValue(undefined);
