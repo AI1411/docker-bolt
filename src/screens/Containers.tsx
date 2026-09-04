@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { ConfirmDialog } from "../components/ConfirmDialog";
 import { ResourceTile } from "../components/icons";
+import { buttonClass } from "../lib/buttonClass";
 import { VirtualTable } from "../components/VirtualTable";
 import { fmtTime, shortId } from "../lib/format";
 import { resourceIconKind } from "../lib/resourceIcon";
@@ -77,7 +78,7 @@ export function Containers() {
       return (
         <div className="empty">
           <p>{view.message}</p>
-          <button type="button" onClick={() => void retry()}>
+          <button type="button" className={buttonClass("primary")} onClick={() => void retry()}>
             Retry
           </button>
         </div>
@@ -123,14 +124,26 @@ export function Containers() {
   return (
     <div className="screen">
       <div className="toolbar">
-        <button type="button" disabled={!connected || loading} onClick={() => void reload()}>
+        <span className="toolbar-title">Containers</span>
+        <button
+          type="button"
+          className={buttonClass("ghost")}
+          disabled={!connected || loading}
+          onClick={() => void reload()}
+        >
           Refresh
         </button>
-        <button type="button" disabled={!connected || !selected || busy} onClick={() => void onDelete()}>
+        <button
+          type="button"
+          className={buttonClass("danger")}
+          disabled={!connected || !selected || busy}
+          onClick={() => void onDelete()}
+        >
           Delete
         </button>
         <button
           type="button"
+          className={buttonClass("ghost")}
           disabled={!selected}
           onClick={() => selected && navigate(`/containers/${encodeURIComponent(selected.id)}/logs`)}
         >
@@ -143,6 +156,7 @@ export function Containers() {
           title={dialog.title}
           body={dialog.body}
           confirmLabel="Delete"
+          confirmVariant="danger"
           confirmDisabled={busy}
           onCancel={() => {
             if (!busy) setDialog(null);

@@ -71,12 +71,24 @@ select {
 }
 
 button {
-  background: var(--accent);
-  color: #fff;
-  border: 1px solid var(--accent);
+  background: transparent;
+  color: var(--fg);
+  border: 1px solid rgba(255, 255, 255, 0.18);
   min-height: 32px;
   padding: 8px 22px;
   border-radius: var(--radius-pill);
+}
+
+button.ghost {
+  background: transparent;
+  color: var(--fg);
+  border-color: rgba(255, 255, 255, 0.18);
+}
+
+button.primary {
+  background: var(--accent);
+  color: #fff;
+  border-color: var(--accent);
 }
 
 select {
@@ -121,13 +133,18 @@ a:focus-visible,
 }
 
 button.danger {
-  background: var(--danger);
-  border-color: var(--danger);
-  color: #f5f5f7;
+  background: transparent;
+  border-color: #ff453a;
+  color: #ff453a;
 }
 
 button.danger:not(:disabled):hover {
-  filter: brightness(1.15);
+  background: rgba(255, 69, 58, 0.12);
+  filter: none;
+}
+
+button.primary:not(:disabled):hover {
+  filter: brightness(1.08);
 }
 
 .app {
@@ -253,6 +270,15 @@ button.danger:not(:disabled):hover {
   padding: 12px 16px;
   border-bottom: 1px solid var(--border);
   background: var(--bg-toolbar);
+}
+
+.toolbar-title {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 21px;
+  line-height: 26px;
+  letter-spacing: 0.231px;
+  margin-right: auto;
 }
 
 .empty {

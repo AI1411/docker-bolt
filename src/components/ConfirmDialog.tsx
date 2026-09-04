@@ -1,3 +1,5 @@
+import { buttonClass, type ButtonVariant } from "../lib/buttonClass";
+
 export function ConfirmDialog({
   title,
   body,
@@ -6,6 +8,7 @@ export function ConfirmDialog({
   onCancel,
   confirmDisabled,
   showCancel = true,
+  confirmVariant = "primary",
 }: {
   title: string;
   body: string;
@@ -14,6 +17,7 @@ export function ConfirmDialog({
   onCancel: () => void;
   confirmDisabled?: boolean;
   showCancel?: boolean;
+  confirmVariant?: ButtonVariant;
 }) {
   return (
     <div className="modal-backdrop" onClick={onCancel} role="presentation">
@@ -28,13 +32,13 @@ export function ConfirmDialog({
         <p>{body}</p>
         <div className="modal-actions">
           {showCancel ? (
-            <button type="button" disabled={confirmDisabled} onClick={onCancel}>
+            <button type="button" className={buttonClass("ghost")} disabled={confirmDisabled} onClick={onCancel}>
               Cancel
             </button>
           ) : null}
           <button
             type="button"
-            className={confirmLabel === "Delete" ? "danger" : undefined}
+            className={buttonClass(confirmVariant)}
             disabled={confirmDisabled}
             onClick={onConfirm}
           >

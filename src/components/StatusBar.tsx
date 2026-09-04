@@ -1,3 +1,4 @@
+import { buttonClass } from "../lib/buttonClass";
 import { connectionStatusClass } from "../lib/chromeTone";
 import { nextEngineId } from "../lib/engineSelect";
 import { useConnection } from "../stores/connection";
@@ -46,7 +47,7 @@ export function StatusBar() {
         ))}
       </select>
       {view.status === "disconnected" ? (
-        <button type="button" onClick={() => void retry()}>
+        <button type="button" className={buttonClass("primary")} onClick={() => void retry()}>
           Retry
         </button>
       ) : null}
