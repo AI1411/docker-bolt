@@ -13,6 +13,7 @@ pub trait DockerPort: Send + Sync {
     async fn remove_container(&self, id: &str, force: bool) -> Result<(), DockboltError>;
     async fn start_container(&self, id: &str) -> Result<(), DockboltError>;
     async fn stop_container(&self, id: &str) -> Result<(), DockboltError>;
+    async fn restart_container(&self, id: &str) -> Result<(), DockboltError>;
     async fn list_networks(&self) -> Result<Vec<NetworkRow>, DockboltError>;
     async fn remove_network(&self, id: &str) -> Result<(), DockboltError>;
     async fn list_images(&self) -> Result<Vec<ImageRow>, DockboltError>;
@@ -61,6 +62,9 @@ mod ping_tests {
             Ok(())
         }
         async fn stop_container(&self, _id: &str) -> Result<(), DockboltError> {
+            Ok(())
+        }
+        async fn restart_container(&self, _id: &str) -> Result<(), DockboltError> {
             Ok(())
         }
         async fn list_networks(&self) -> Result<Vec<NetworkRow>, DockboltError> {
