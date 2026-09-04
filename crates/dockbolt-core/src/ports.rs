@@ -25,7 +25,11 @@ pub fn browser_url_for_port(port: &PublishedPort) -> Option<String> {
     if !port.protocol.eq_ignore_ascii_case("tcp") || port.host_port == 0 {
         return None;
     }
-    let scheme = if port.host_port == 443 { "https" } else { "http" };
+    let scheme = if port.host_port == 443 {
+        "https"
+    } else {
+        "http"
+    };
     let host = match port.host_ip.as_str() {
         "" | "0.0.0.0" | "::" | "[::]" => "127.0.0.1",
         other => other,

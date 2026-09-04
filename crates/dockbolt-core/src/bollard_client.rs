@@ -13,7 +13,8 @@ use crate::error::{map_status_and_message, DockboltError};
 use crate::events::resources_from_docker_type;
 use crate::logs::{parse_docker_log_text, LOG_TAIL};
 use crate::types::{
-    ContainerRow, EngineEvent, ImageRow, LogStream, NetworkRow, PublishedPort, RawLogChunk, VolumeRow,
+    ContainerRow, EngineEvent, ImageRow, LogStream, NetworkRow, PublishedPort, RawLogChunk,
+    VolumeRow,
 };
 
 pub struct BollardDocker {
