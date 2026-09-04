@@ -22,7 +22,8 @@ test("danger class comes from confirmVariant, not the Delete label", () => {
       />,
     );
   });
-  const confirm = [...el.querySelectorAll("button")].at(-1);
+  const buttons = [...el.querySelectorAll("button")];
+  const confirm = buttons[buttons.length - 1];
   expect(confirm?.className).not.toContain("danger");
   expect(confirm?.className).toContain("primary");
   act(() => {
@@ -47,7 +48,8 @@ test("confirmVariant danger marks the confirm control", () => {
       />,
     );
   });
-  const confirm = [...el.querySelectorAll("button")].at(-1);
+  const buttons = [...el.querySelectorAll("button")];
+  const confirm = buttons[buttons.length - 1];
   expect(confirm?.className).toContain("danger");
   act(() => {
     root.unmount();
