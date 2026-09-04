@@ -121,6 +121,7 @@ mod delete_tests {
             created_unix: 1,
             compose_project: None,
             compose_service: None,
+            ports: vec![],
         };
         delete_container(&docker, &row).await.unwrap();
         assert_eq!(*last.lock().unwrap(), Some(true));
@@ -142,6 +143,7 @@ mod delete_tests {
             created_unix: 1,
             compose_project: None,
             compose_service: None,
+            ports: vec![],
         };
         delete_container(&docker, &row).await.unwrap();
         assert_eq!(*last.lock().unwrap(), Some(false));

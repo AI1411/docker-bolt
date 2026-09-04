@@ -138,6 +138,7 @@ mod classify_tests {
             created_unix: 0,
             compose_project: None,
             compose_service: None,
+            ports: vec![],
         }
     }
 

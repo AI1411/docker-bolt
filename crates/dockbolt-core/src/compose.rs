@@ -201,6 +201,7 @@ mod grouping_tests {
             created_unix: 0,
             compose_project: project.map(|s| s.to_string()),
             compose_service: service.map(|s| s.to_string()),
+            ports: vec![],
         }
     }
 
