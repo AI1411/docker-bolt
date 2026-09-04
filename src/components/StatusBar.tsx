@@ -1,3 +1,4 @@
+import { connectionStatusClass } from "../lib/chromeTone";
 import { nextEngineId } from "../lib/engineSelect";
 import { useConnection } from "../stores/connection";
 
@@ -21,7 +22,9 @@ export function StatusBar() {
 
   return (
     <footer className="status-bar">
-      <span className={`status-text ${view.status}`}>{statusText}</span>
+      <span className={connectionStatusClass(view.status)} role="status">
+        {statusText}
+      </span>
       <select
         aria-label="Engine"
         value={selected}

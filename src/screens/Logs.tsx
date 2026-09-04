@@ -2,6 +2,7 @@ import { useEffect, useMemo } from "react";
 import { useParams } from "react-router-dom";
 import { VirtualTable } from "../components/VirtualTable";
 import { filterLines, type StreamFilter } from "../lib/logFilter";
+import { runDotClass } from "../lib/chromeTone";
 import { shortId } from "../lib/format";
 import { useConnection } from "../stores/connection";
 import { useContainers } from "../stores/containers";
@@ -60,10 +61,8 @@ export function Logs() {
     <div className="screen">
       <div className="logs-header">
         <span className="logs-name">{name}</span>
-        <span
-          className={`run-dot${running ? " running" : ""}`}
-          title={running ? "Running" : container?.state ?? ""}
-        />
+        <span className={runDotClass(running)} title={running ? "Running" : container?.state ?? ""} />
+        <span className="run-label">{running ? "Running" : (container?.state ?? "Stopped")}</span>
         {ended ? <span className="logs-ended">{ended}</span> : null}
         {omitted > 0 ? <span className="logs-skipped">Skipped {omitted} lines</span> : null}
       </div>

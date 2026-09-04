@@ -18,6 +18,8 @@
   --border: rgba(255, 255, 255, 0.12);
   --accent: #0071e3;
   --accent-bright: #2997ff;
+  --ok: #30d158;
+  --warn: #f5a524;
   --danger: #1d1d1f;
   --status-h: 44px;
   --sidebar-w: 200px;
@@ -183,8 +185,9 @@ button.danger:not(:disabled):hover {
 }
 
 .nav.active {
-  background: var(--bg-selected);
+  background: rgba(255, 255, 255, 0.08);
   color: var(--fg);
+  box-shadow: inset 2px 0 0 var(--accent);
 }
 
 .main {
@@ -228,9 +231,12 @@ button.danger:not(:disabled):hover {
   white-space: nowrap;
 }
 
-.status-text.disconnected,
-.status-text.connecting {
-  color: var(--accent-bright);
+.status-text.warn {
+  color: var(--warn);
+}
+
+.status-text.ok {
+  color: var(--fg);
 }
 
 .screen {
@@ -332,7 +338,8 @@ button.danger:not(:disabled):hover {
 }
 
 .row.selected {
-  background: var(--bg-selected);
+  background: var(--bg-row-hover);
+  box-shadow: inset 2px 0 0 var(--accent);
 }
 
 .row.section {
@@ -564,11 +571,18 @@ button.danger:not(:disabled):hover {
 }
 
 .run-dot.running {
-  background: var(--accent-bright);
+  background: var(--ok);
+}
+
+.run-label {
+  font-size: 12px;
+  line-height: 16px;
+  letter-spacing: normal;
+  color: var(--fg-muted);
 }
 
 .logs-ended {
-  color: var(--accent-bright);
+  color: var(--warn);
 }
 
 .logs-skipped {
