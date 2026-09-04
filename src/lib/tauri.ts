@@ -1,6 +1,13 @@
 import { invoke } from "@tauri-apps/api/core";
 import { listen, type UnlistenFn } from "@tauri-apps/api/event";
 
+export type PublishedPort = {
+  host_ip: string;
+  host_port: number;
+  container_port: number;
+  protocol: string;
+};
+
 export type ContainerRow = {
   id: string;
   name: string;
@@ -11,6 +18,7 @@ export type ContainerRow = {
   state: string;
   running: boolean;
   created_unix: number;
+  ports?: PublishedPort[];
 };
 export type ImageRow = {
   id: string;
@@ -111,6 +119,7 @@ export const api = {
   startLogs: (container_id: string) =>
     invoke<{ session_id: string }>("start_logs", { container_id }),
   stopLogs: (session_id: string) => invoke("stop_logs", { session_id }),
+  openUrl: (url: string) => invoke("open_url", { url }),
 };
 
 export function listenConnection(cb: (v: ConnectionView) => void): Promise<UnlistenFn> {

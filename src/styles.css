@@ -460,7 +460,7 @@ button.primary:not(:disabled):hover {
 }
 
 .row[data-cols="containers"] {
-  grid-template-columns: 40px minmax(120px, 1.6fr) 108px 108px 132px;
+  grid-template-columns: 40px minmax(120px, 1.6fr) 108px minmax(72px, 1fr) 108px 132px;
 }
 
 .row[data-cols="compose"] {
@@ -491,6 +491,29 @@ button.primary:not(:disabled):hover {
   display: flex;
   justify-content: flex-end;
   padding-right: 0;
+}
+
+.ports-cell {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  min-width: 0;
+}
+
+.port-link {
+  padding: 0;
+  color: var(--accent-bright);
+  font: inherit;
+  background: none;
+  border: none;
+  border-radius: 0;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.port-link:hover {
+  color: var(--fg);
 }
 
 .icon-btn {

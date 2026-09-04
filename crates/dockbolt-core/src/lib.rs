@@ -7,6 +7,7 @@ pub mod error;
 pub mod events;
 pub mod images;
 pub mod logs;
+pub mod ports;
 pub mod types;
 pub mod volumes;
 
@@ -155,6 +156,7 @@ mod container_tests {
             created_unix: 0,
             compose_project: None,
             compose_service: None,
+            ports: vec![],
         }
     }
 

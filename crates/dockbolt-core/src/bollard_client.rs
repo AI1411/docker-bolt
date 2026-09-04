@@ -13,7 +13,8 @@ use crate::error::{map_status_and_message, DockboltError};
 use crate::events::resources_from_docker_type;
 use crate::logs::{parse_docker_log_text, LOG_TAIL};
 use crate::types::{
-    ContainerRow, EngineEvent, ImageRow, LogStream, NetworkRow, RawLogChunk, VolumeRow,
+    ContainerRow, EngineEvent, ImageRow, LogStream, NetworkRow, PublishedPort, RawLogChunk,
+    VolumeRow,
 };
 
 pub struct BollardDocker {
@@ -136,6 +137,22 @@ impl DockerPort for BollardDocker {
                     id,
                     compose_project,
                     compose_service,
+                    ports: c
+                        .ports
+                        .unwrap_or_default()
+                        .into_iter()
+                        .filter_map(|port| {
+                            Some(PublishedPort {
+                                host_ip: port.ip.unwrap_or_default(),
+                                host_port: port.public_port?,
+                                container_port: port.private_port,
+                                protocol: port
+                                    .typ
+                                    .map(|kind| kind.to_string().to_lowercase())
+                                    .unwrap_or_else(|| "tcp".into()),
+                            })
+                        })
+                        .collect(),
                 }
             })
             .collect())

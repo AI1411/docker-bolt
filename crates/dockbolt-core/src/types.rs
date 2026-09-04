@@ -21,6 +21,14 @@ impl ResourceKind {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+pub struct PublishedPort {
+    pub host_ip: String,
+    pub host_port: u16,
+    pub container_port: u16,
+    pub protocol: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub struct ContainerRow {
     pub id: String,
     pub name: String,
@@ -34,6 +42,8 @@ pub struct ContainerRow {
     pub compose_project: Option<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub compose_service: Option<String>,
+    #[serde(default)]
+    pub ports: Vec<PublishedPort>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]

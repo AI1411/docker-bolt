@@ -645,6 +645,21 @@ async fn restart_container(state: State<'_, AppState>, id: String) -> Result<OkR
 }
 
 #[tauri::command(rename_all = "snake_case")]
+async fn open_url(url: String) -> Result<OkReply, IpcError> {
+    if !dockbolt_core::ports::is_allowed_browser_url(&url) {
+        return Err(IpcError {
+            code: "internal".into(),
+            message: "only http(s) URLs can be opened".into(),
+        });
+    }
+    tauri::async_runtime::spawn_blocking(move || open::that(url))
+        .await
+        .map_err(|err| ipc_internal(err.to_string()))?
+        .map_err(|err| ipc_internal(err.to_string()))?;
+    Ok(OkReply { ok: true })
+}
+
+#[tauri::command(rename_all = "snake_case")]
 async fn delete_image(state: State<'_, AppState>, id: String) -> Result<OkReply, IpcError> {
     let IdArg { id } = IdArg { id };
     let docker = docker_from_state(&state).await?;
@@ -878,6 +893,7 @@ pub fn run() {
             start_container,
             stop_container,
             restart_container,
+            open_url,
             delete_image,
             delete_volume,
             refresh,

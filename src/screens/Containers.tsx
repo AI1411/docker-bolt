@@ -14,6 +14,11 @@ import { resourceStatusPill } from "../lib/statusPill";
 import { VirtualTable } from "../components/VirtualTable";
 import { fmtTime, shortId } from "../lib/format";
 import { filterByQuery, noMatchCopy } from "../lib/listFilter";
+import {
+  browserUrlForPort,
+  publishedPortLabel,
+  type PublishedPort,
+} from "../lib/ports";
 import { resourceIconKind } from "../lib/resourceIcon";
 import { api, ipcErrorCode, ipcErrorMessage, type ContainerRow } from "../lib/tauri";
 import { useConnection } from "../stores/connection";
@@ -30,6 +35,52 @@ function deleteCopy(row: ContainerRow): { title: string; body: string } {
     title: "Delete container",
     body: `Delete ${row.name}? This cannot be undone.`,
   };
+}
+
+function rowPorts(row: ContainerRow): PublishedPort[] {
+  return row.ports ?? [];
+}
+
+function PortsCell({ ports }: { ports: PublishedPort[] }) {
+  if (ports.length === 0) {
+    return <span className="cell muted">—</span>;
+  }
+  const shown = ports.slice(0, 2);
+  const extra = ports.length - 2;
+  return (
+    <span className="cell ports-cell">
+      {shown.map((port, index) => {
+        const url = browserUrlForPort(port);
+        const label = publishedPortLabel(port);
+        const sep = index > 0 ? ", " : "";
+        if (!url) {
+          return (
+            <span key={`${port.protocol}-${port.host_port}-${index}`}>
+              {sep}
+              <span className="muted">{label}</span>
+            </span>
+          );
+        }
+        return (
+          <span key={`${port.protocol}-${port.host_port}-${index}`}>
+            {sep}
+            <button
+              type="button"
+              className="port-link"
+              title={`Open ${url}`}
+              onClick={(event) => {
+                event.stopPropagation();
+                void api.openUrl(url);
+              }}
+            >
+              {label}
+            </button>
+          </span>
+        );
+      })}
+      {extra > 0 ? <span className="muted">{` +${extra}`}</span> : null}
+    </span>
+  );
 }
 
 type Dialog =
@@ -50,7 +101,14 @@ export function Containers() {
   const removeRow = useContainers((s) => s.removeRow);
   const [query, setQuery] = useState("");
   const visible = useMemo(
-    () => filterByQuery(rows, query, (row) => [row.name, row.image, row.state, row.id]),
+    () =>
+      filterByQuery(rows, query, (row) => [
+        row.name,
+        row.image,
+        row.state,
+        row.id,
+        ...rowPorts(row).map(publishedPortLabel),
+      ]),
     [rows, query],
   );
   const selected = visible.find((row) => row.id === selectedId) ?? null;
@@ -151,6 +209,7 @@ export function Containers() {
               <span className="cell">
                 <StatusPill {...resourceStatusPill(row.state, row.running)} />
               </span>
+              <PortsCell ports={rowPorts(row)} />
               <span className="cell mono muted">{shortId(row.id)}</span>
               <span className="cell muted">{fmtTime(row.created_unix)}</span>
             </div>
