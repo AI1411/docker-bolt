@@ -750,6 +750,7 @@ version = "0.1.0"
 dependencies = [
  "dirs 5.0.1",
  "dockbolt-core",
+ "futures",
  "open",
  "serde",
  "serde_json",
