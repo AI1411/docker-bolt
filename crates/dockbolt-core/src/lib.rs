@@ -9,6 +9,7 @@ pub mod images;
 pub mod inspect;
 pub mod logs;
 pub mod ports;
+pub mod prune;
 pub mod types;
 pub mod volumes;
 

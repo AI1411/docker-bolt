@@ -5,7 +5,8 @@ use futures::Stream;
 
 use crate::error::DockboltError;
 use crate::types::{
-    ContainerInspect, ContainerRow, EngineEvent, ImageRow, NetworkRow, RawLogChunk, VolumeRow,
+    ContainerInspect, ContainerRow, EngineEvent, ImageRow, NetworkRow, PruneDelta, RawLogChunk,
+    VolumeRow,
 };
 
 #[async_trait]
@@ -26,6 +27,15 @@ pub trait DockerPort: Send + Sync {
     async fn remove_image(&self, id: &str) -> Result<(), DockboltError>;
     async fn list_volumes(&self) -> Result<Vec<VolumeRow>, DockboltError>;
     async fn remove_volume(&self, name: &str) -> Result<(), DockboltError>;
+    async fn prune_stopped_containers(&self) -> Result<PruneDelta, DockboltError> {
+        Ok(PruneDelta::default())
+    }
+    async fn prune_dangling_images(&self) -> Result<PruneDelta, DockboltError> {
+        Ok(PruneDelta::default())
+    }
+    async fn prune_unused_networks(&self) -> Result<PruneDelta, DockboltError> {
+        Ok(PruneDelta::default())
+    }
     fn logs(
         &self,
         container_id: &str,

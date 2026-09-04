@@ -1,8 +1,9 @@
+use std::collections::HashMap;
 use std::pin::Pin;
 
 use async_trait::async_trait;
 use bollard::container::{ListContainersOptions, LogsOptions, RemoveContainerOptions};
-use bollard::image::{ListImagesOptions, RemoveImageOptions};
+use bollard::image::{ListImagesOptions, PruneImagesOptions, RemoveImageOptions};
 use bollard::volume::{ListVolumesOptions, RemoveVolumeOptions};
 use bollard::Docker;
 use futures::{Stream, StreamExt};
@@ -15,7 +16,7 @@ use crate::inspect::{binding_to_published, parse_env_entry, restart_policy_label
 use crate::logs::{parse_docker_log_text, LOG_TAIL};
 use crate::types::{
     ContainerInspect, ContainerRow, EngineEvent, ImageRow, InspectMount, LogStream, NetworkRow,
-    PublishedPort, RawLogChunk, VolumeRow,
+    PruneDelta, PublishedPort, RawLogChunk, VolumeRow,
 };
 
 pub struct BollardDocker {
@@ -380,6 +381,44 @@ impl DockerPort for BollardDocker {
             .remove_volume(name, Some(RemoveVolumeOptions { force: false }))
             .await
             .map_err(map_bollard_error)
+    }
+
+    async fn prune_stopped_containers(&self) -> Result<PruneDelta, DockboltError> {
+        let resp = self
+            .docker
+            .prune_containers(None::<bollard::container::PruneContainersOptions<String>>)
+            .await
+            .map_err(map_bollard_error)?;
+        Ok(PruneDelta {
+            deleted: resp.containers_deleted.unwrap_or_default().len() as u32,
+            space_reclaimed_bytes: resp.space_reclaimed.unwrap_or(0).max(0) as u64,
+        })
+    }
+
+    async fn prune_dangling_images(&self) -> Result<PruneDelta, DockboltError> {
+        let mut filters = HashMap::new();
+        filters.insert("dangling", vec!["true"]);
+        let resp = self
+            .docker
+            .prune_images(Some(PruneImagesOptions { filters }))
+            .await
+            .map_err(map_bollard_error)?;
+        Ok(PruneDelta {
+            deleted: resp.images_deleted.unwrap_or_default().len() as u32,
+            space_reclaimed_bytes: resp.space_reclaimed.unwrap_or(0).max(0) as u64,
+        })
+    }
+
+    async fn prune_unused_networks(&self) -> Result<PruneDelta, DockboltError> {
+        let resp = self
+            .docker
+            .prune_networks(None::<bollard::network::PruneNetworksOptions<String>>)
+            .await
+            .map_err(map_bollard_error)?;
+        Ok(PruneDelta {
+            deleted: resp.networks_deleted.unwrap_or_default().len() as u32,
+            space_reclaimed_bytes: 0,
+        })
     }
 
     fn logs(

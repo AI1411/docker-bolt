@@ -107,6 +107,29 @@ pub struct ImageRow {
     pub in_use: bool,
 }
 
+#[derive(Debug, Clone, Default, Serialize, Deserialize, PartialEq, Eq)]
+pub struct PruneDelta {
+    pub deleted: u32,
+    pub space_reclaimed_bytes: u64,
+}
+
+#[derive(Debug, Clone, Default, Serialize, Deserialize, PartialEq, Eq)]
+pub struct PrunePreview {
+    pub stopped_containers: u32,
+    pub dangling_images: u32,
+    pub unused_networks: u32,
+}
+
+#[derive(Debug, Clone, Default, Serialize, Deserialize, PartialEq, Eq)]
+pub struct PruneReport {
+    pub containers_deleted: u32,
+    pub images_deleted: u32,
+    pub networks_deleted: u32,
+    pub space_reclaimed_bytes: u64,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub error: Option<String>,
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub struct VolumeRow {
     pub name: String,
