@@ -1,6 +1,7 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { ConfirmDialog } from "../components/ConfirmDialog";
+import { ListSearch } from "../components/ListSearch";
 import { ResourceTile } from "../components/icons";
 import { StatusPill } from "../components/StatusPill";
 import { buttonClass } from "../lib/buttonClass";
@@ -12,6 +13,7 @@ import {
 import { resourceStatusPill } from "../lib/statusPill";
 import { VirtualTable } from "../components/VirtualTable";
 import { fmtTime, shortId } from "../lib/format";
+import { filterByQuery, noMatchCopy } from "../lib/listFilter";
 import { resourceIconKind } from "../lib/resourceIcon";
 import { api, ipcErrorCode, ipcErrorMessage, type ContainerRow } from "../lib/tauri";
 import { useConnection } from "../stores/connection";
@@ -46,7 +48,12 @@ export function Containers() {
   const select = useContainers((s) => s.select);
   const reload = useContainers((s) => s.reload);
   const removeRow = useContainers((s) => s.removeRow);
-  const selected = rows.find((row) => row.id === selectedId) ?? null;
+  const [query, setQuery] = useState("");
+  const visible = useMemo(
+    () => filterByQuery(rows, query, (row) => [row.name, row.image, row.state, row.id]),
+    [rows, query],
+  );
+  const selected = visible.find((row) => row.id === selectedId) ?? null;
   const connected = view.status === "connected";
   const [dialog, setDialog] = useState<Dialog | null>(null);
   const [busy, setBusy] = useState(false);
@@ -116,12 +123,16 @@ export function Containers() {
     if (!loading && connected && rows.length === 0) {
       return <div className="empty">No containers</div>;
     }
+    const miss = noMatchCopy("containers", query, rows.length, visible.length);
+    if (miss) {
+      return <div className="empty">{miss}</div>;
+    }
     return (
       <VirtualTable
-        count={rows.length}
+        count={visible.length}
         rowHeight={56}
         rowRenderer={(index) => {
-          const row = rows[index];
+          const row = visible[index];
           return (
             <div
               className={`row list-row ${row.id === selectedId ? "selected" : ""}`}
@@ -153,6 +164,7 @@ export function Containers() {
     <div className="screen">
       <div className="toolbar">
         <span className="toolbar-title">Containers</span>
+        <ListSearch value={query} onChange={setQuery} label="Filter containers" />
         <button
           type="button"
           className={buttonClass("ghost")}

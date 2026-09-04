@@ -1,7 +1,9 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { ConfirmDialog } from "../components/ConfirmDialog";
+import { ListSearch } from "../components/ListSearch";
 import { ResourceTile } from "../components/icons";
 import { buttonClass } from "../lib/buttonClass";
+import { filterByQuery, noMatchCopy } from "../lib/listFilter";
 import { VirtualTable } from "../components/VirtualTable";
 import { api, ipcErrorCode, ipcErrorMessage } from "../lib/tauri";
 import { useConnection } from "../stores/connection";
@@ -21,7 +23,12 @@ export function Volumes() {
   const select = useVolumes((s) => s.select);
   const reload = useVolumes((s) => s.reload);
   const removeRow = useVolumes((s) => s.removeRow);
-  const selected = rows.find((row) => row.name === selectedName) ?? null;
+  const [query, setQuery] = useState("");
+  const visible = useMemo(
+    () => filterByQuery(rows, query, (row) => [row.name, row.driver]),
+    [rows, query],
+  );
+  const selected = visible.find((row) => row.name === selectedName) ?? null;
   const connected = view.status === "connected";
   const [dialog, setDialog] = useState<Dialog | null>(null);
   const [busy, setBusy] = useState(false);
@@ -67,12 +74,16 @@ export function Volumes() {
     if (!loading && connected && rows.length === 0) {
       return <div className="empty">No volumes</div>;
     }
+    const miss = noMatchCopy("volumes", query, rows.length, visible.length);
+    if (miss) {
+      return <div className="empty">{miss}</div>;
+    }
     return (
       <VirtualTable
-        count={rows.length}
+        count={visible.length}
         rowHeight={56}
         rowRenderer={(index) => {
-          const row = rows[index];
+          const row = visible[index];
           return (
             <div
               className={`row list-row ${row.name === selectedName ? "selected" : ""}`}
@@ -97,6 +108,7 @@ export function Volumes() {
     <div className="screen">
       <div className="toolbar">
         <span className="toolbar-title">Volumes</span>
+        <ListSearch value={query} onChange={setQuery} label="Filter volumes" />
         <button
           type="button"
           className={buttonClass("ghost")}
